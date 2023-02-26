@@ -30,6 +30,10 @@ const basepath = process.env.BASEPATH + '/derived/transactions/'
         const fileName = Number(key) + Number(hth)
         const pathDir = basepath + key + '/' + hth
         const path = basepath + key + '/' + hth + '/' + highFile + '.json'
+        if (!fs.existsSync(path)) {
+          console.log('processing blocks 0 - 1000 of 100k')
+          continue
+        }
         const jsonRaw = fs.readFileSync(path)
         const size = await fileSize(pathDir)
         const json = JSON.parse(jsonRaw)
