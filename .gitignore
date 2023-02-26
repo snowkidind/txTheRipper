@@ -1,0 +1,13 @@
+.idea
+.DS_Store
+node_modules/
+.env
+.envm
+environment
+ecosystem.config.js
+pgdata/
+.*.swp
+data/*
+log/*
+notes/
+derived/
