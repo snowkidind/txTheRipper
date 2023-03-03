@@ -47,7 +47,11 @@ module.exports = {
   },
 
   searchAddress: async (address, afterBlock) => {
+    
+  },
 
+  queueSize: () => {
+    return JSON.stringify(txQueue).length
   }
 }
 
@@ -88,7 +92,7 @@ const estabishCommitFile = async (block) => {
   // select a commit file.
   const [mill, hth] = parentStructure(block)
   // dir may / will have multiple files we want the one with the highest block
-  console.log(dir)
+  // console.log(dir)
   if (dir.length === 0) {
     fs.writeFileSync(basepath + mill + '/' + hth + '/' + block + '.json', '[]') // initialize new commit file
     commitFile = basepath + mill + '/' + hth + '/' + block + '.json'
@@ -109,6 +113,7 @@ const estabishCommitFile = async (block) => {
 }
 
 const commitSync = async (block) => {
+  
   const stats = await fs.statSync(commitFile)
   if (stats.size > fileSizeMax) {
     // needs new commit file

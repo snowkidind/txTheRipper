@@ -39,6 +39,16 @@ const getProvider = (blockchain = 'mainnet') => {
   }
 }
 
+const getWebSocket = (blockchain = 'mainnet') => {
+  if (inited) {
+    return provider[blockchain]
+  }
+  else {
+    wsProvider['mainnet'] = new ethers.providers.WebSocketProvider(process.env.RPC_NODE_WS, chainId['mainnet'])
+    return wsProvider[blockchain]
+  }
+}
+
 
 // Method to extract abi from etherscan automatically (still has issues)
 
@@ -259,6 +269,7 @@ module.exports = {
   },
 
   getProvider,
+  getWebSocket,
   getAbi
 
 }

@@ -1,6 +1,8 @@
 const fs = require('fs')
 
 const basepath = process.env.BASEPATH + '/derived/transactions/'
+const runFile = process.env.BASEPATH + 'derived/application/run'
+const pauseFile = process.env.BASEPATH + 'derived/application/pause'
 
 module.exports = {
 
@@ -48,19 +50,33 @@ module.exports = {
     return grid
   },
 
-  nextAvailableJob: (jobs) => {
+  // To issue a job as opposed to viewing available jobs, set issue = true
+  nextAvailableJob: (jobs, issue) => {
+    const _run = fs.readFileSync(runFile, 'utf8')
+    let run = JSON.parse(_run)
     let job = {}
     let found = false
     for (key in jobs) {
       for (hth in jobs[key]) {
-        if (jobs[key][hth] === 'new') {
+        if (jobs[key][hth] === 'new' || jobs[key][hth] === 'progress') {
           job['mill'] = key
           job['hth'] = hth
           job['status'] = jobs[key][hth]
           const block = Number(key) + Number(hth)
           job['block'] = block
-          found = true
-          break
+          let exists = false
+          if (jobs[key][hth] === 'progress') {
+            // skip a job already in progress
+            run.jobs.forEach((j) => {
+              if (j.block === block) {
+                exists = true
+              }
+            })
+          } 
+          if (exists === false) {
+            found = true
+            break
+          }
         }
       }
       if (found) break
@@ -68,6 +84,37 @@ module.exports = {
     if (found === false) {
       return false
     }
+    run.jobs.push(job)
+    if (issue) fs.writeFileSync(runFile, JSON.stringify(run, null, 4)) // add the job to the job file.
     return job
+  },
+
+  // Remove job from application data to ensure the runner keeps trying this job.
+  exitJob: async (job, pauseOnError) => {
+    if (pauseOnError) {
+      fs.writeFileSync(pauseFile, 'true')
+    }
+    if (typeof job === 'undefined') {
+      console.log('DEBUG: Job is undefined')
+      return
+    }
+    const _run = fs.readFileSync(runFile, 'utf8')
+    let run, error
+    try {
+      run = JSON.parse(_run)
+    } catch (error) {
+      fs.writeFileSync(runFile, JSON.stringify(error, null, 4)) 
+      error = true
+    }
+    if (!error) {
+      const newRun = { process: run.process, jobs: [] }
+      run.jobs.forEach((j) => {
+        if (j.block !== job.block) {
+          newRun.jobs.push(j)
+        }
+      })
+      fs.writeFileSync(runFile, JSON.stringify(newRun, null, 4))
+    }
+
   }
 }
