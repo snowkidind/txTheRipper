@@ -89,6 +89,7 @@ const makeJob = async (job, lastBlock) => {
   const doCommit = async (block) => {
     const q = queueSize()
     await commitTxSync(block)
+    log(logFile, 'Commit at block: ', block)
     if (!responseCheck()) {
       const message = 'saving and quitting because the rpc is not responsive enough'
       log(logFile, message)
@@ -142,11 +143,11 @@ const makeJob = async (job, lastBlock) => {
       const externalInfo = await externalBlockInfo(block)
       for (let i = 0; i < externalInfo.length; i++) {
         const [b, timestamp, hash, targets] = externalInfo[i]
-        log(logFile, 'Adding Transaction in Bad Block info from external source: ' + b + ' ' + timestamp)
         await addTransaction(b, timestamp, hash, targets)
       }
+      log(logFile, 'Adding ' + externalInfo.length + ' Transactions Bad Block info from external source')
       badBlockCommit += 1
-      if (badBlockCommit > 20) {
+      if (badBlockCommit > 5) {
         await doCommit(block) // commit after arduous processes more often to avoid redundant calls after api limit runout
         badBlockCommit = 0
       }
