@@ -2,7 +2,9 @@
 
 TxRipper will index the accounts and transactions in the database to allow for looking up some basic things.
 
-  1. Get all transaction info related to an address
+***
+
+1. Get all transaction info related to an address
 
 ```
     SELECT tr.id, tr.block, tr.timestamp, tr.hash, t.account 
@@ -33,6 +35,22 @@ TxRipper will index the accounts and transactions in the database to allow for l
         WHERE hash = '0x167402709821f1c262890717636ad671c464a1e6edbe0418c801228737322793');
 ```
 
+
+# index cache
+
+txRipper uses an index cache to record accounts that appear millions of times in the database, having a notable impact on account size. Think USDT, Uniswap Pools, Binance EOA's. These busy Ids are stored in binary (thats BYTEA in PG). 
+
+In order to do this a pre scan occurs that takes a one hour long sampling of blocks every 450k blocks and accumulates these addresses by rank. Addresses that occur frequently are then converted to an integer index and the original stored in a separate table, thereby reducing the db size (and read/writes) significantly.
+
+# Hardware requirements
+
+ - Ubuntu
+ - 64G Ram
+ - Intel i7 class or greater processor
+ - SSD with at least 4 Gigs for archival node
+ - Second SSD or NVMe for index
+
+***
 
 import popular addresses into account_index
 sync process
