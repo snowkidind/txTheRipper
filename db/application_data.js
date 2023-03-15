@@ -50,34 +50,6 @@ module.exports = {
     }
   },
 
-  setProcessId: async (processId) => {
-    try {
-      const q1 = 'SELECT value_int FROM application_data WHERE field = \'process\''
-      const result1 = await c.query(q1)
-      if (result1.rows.length === 0) {
-        const q2 = 'INSERT INTO application_data ("field", "value_int") VALUES (\'process\', $1)'
-        await c.query(q2, [processId])
-      } else {
-        const q3 = 'UPDATE application_data SET "value_int" = $1 WHERE field = \'process\''
-        await c.query(q3, [processId])
-      }
-      const result2 = await c.query(q1)
-      return { newStatus: result2.rows[0].value_int }
-    } catch (error) {
-      console.log(error)
-    }
-  },
-
-  getProcessId: async () => {
-    try {
-      const q1 = 'SELECT value_int FROM application_data WHERE field = \'process\''
-      const result = await c.query(q1)
-      return { newStatus: result.rows[0].value_int }
-    } catch (error) {
-      console.log(error)
-    }
-  },
-
   setLastBlockSynced: async (lastBlock) => {
     try {
       const q1 = 'SELECT value_int FROM application_data WHERE field = \'block_sync\''

@@ -10,7 +10,7 @@ const fs = require('fs')
 const { getAnswer, execute } = require('./common.js')
 const { system } = require('../../utils')
 const { dbAppData } = require('../../db')
-
+const { log, logError, clearLog } = require('../../utils/log')
 
 const mainMenu = async () => {
 
@@ -20,6 +20,7 @@ const mainMenu = async () => {
   menu += "  n    Nuke the database\n"
   menu += "  p    Pause the application, currently: " + pause + "\n"
   menu += "  u    Unpause the application\n"
+  menu += "  xl   Clear log file\n"
   menu += "  q    Exit\n\n"
   menu += "  Enter a command:\n "
 
@@ -34,7 +35,7 @@ const mainMenu = async () => {
       const fullPath = __dirname + '/../../db/schema/schema_nuke.sql'
       const cmd = 'psql -d ' + process.env.DB_NAME + ' -f ' + fullPath
       await system.execCmd(cmd)
-      console.log('Nuked. You will have to fix this once partitions get involved.')
+      log('Nuked. You will have to fix this once partitions get involved.', 1)
       process.exit()
     } else {
       mainMenu()
@@ -56,8 +57,15 @@ const mainMenu = async () => {
     }
   }
 
+  else if (query === "xl") {
+    const execute = await getAnswer(rl, 'Clear Log File? (y)', mainMenu)
+    if (execute === 'y') {
+      clearLog()
+    }
+  }
+
   else if (query === "q") {
-    console.log("Exit.")
+    log("Exit Application from Cli", 1)
     rl.close()
     process.exit()
   }
@@ -68,7 +76,7 @@ const mainMenu = async () => {
     try {
       await mainMenu()
     } catch (error) {
-      console.log(error)
+      logError(error, 'Application Error')
       process.exit(1)
     }
   })()

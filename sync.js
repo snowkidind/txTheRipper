@@ -12,7 +12,6 @@ const { timeFmtDb, dateNowBKK } = dateutils
 const { dbTransactions } = require('./db')
 const { addTransaction, commitTxSync, queueSize } = dbTransactions
 const provider = multiEth.getProvider('mainnet')
-const externalProvider = new ethers.providers.JsonRpcBatchProvider(process.env.EXTERNAL_NODE, 1)
 
 const basepath = process.env.BASEPATH + '/derived/transactions/'
 const applicationLog = process.env.BASEPATH + 'derived/application/log'
@@ -20,14 +19,6 @@ const pauseFile = process.env.BASEPATH + 'derived/application/pause'
 
 const maxAcceptableLag = 2 // 1 second per rpc req and you are dead
 let currentBlock
-
-const badBlockRanges = [
-  [10572024, 10572050],
-  [10572058, 10572150],
-  [10572263, 10573150],
-  [10864183, 10864300],
-  [10864375, 10864492]
-]
 
 ; (async () => {
     let job, lastBlock
@@ -66,17 +57,6 @@ const badBlockRanges = [
     process.exit(0)
   })()
 
-const inBadBlockRange = (block) => {
-  let found = false
-  badBlockRanges.forEach((r) => {
-    [from, to] = r
-    if (block > from && block < to) {
-      console.log('Block ' + block + ' is in bad disk block range')
-      found = true
-    }
-  })
-  return found
-}
 
 const makeJob = async (job, lastBlock) => {
 
@@ -133,28 +113,9 @@ const makeJob = async (job, lastBlock) => {
 
   log(logFile, 'Starting Job ' + job.block + ' from block: ' + lowBlock)
 
-  let badBlockCommit = 0
 
   for (let block = lowBlock; block <= stop; block++) {
     currentBlock = block
-
-    /*
-    // In the case of a disk error you can optionally add a range of blocks to extract remotely
-    if (inBadBlockRange(block) === true) {
-      const externalInfo = await externalBlockInfo(block)
-      for (let i = 0; i < externalInfo.length; i++) {
-        const [b, timestamp, hash, targets] = externalInfo[i]
-        await addTransaction(b, timestamp, hash, targets)
-      }
-      log(logFile, 'Adding ' + externalInfo.length + ' Transactions Bad Block info from external source')
-      badBlockCommit += 1
-      if (badBlockCommit > 5) {
-        await doCommit(block) // commit after arduous processes more often to avoid redundant calls after api limit runout
-        badBlockCommit = 0
-      }
-      continue
-    }
-    */
 
     // if another process failed theres no reason this process should exit because of a bad request, so we retry on failure
     // if it throws a second time you get ejected from the building
@@ -252,36 +213,4 @@ const appLog = (message) => {
 
 const sleep = (m) => {
   return new Promise(r => setTimeout(r, m))
-}
-
-/* 
-  When local data is unavailable, call upon external provider to extract information.
-*/
-const externalBlockInfo = async (block) => {
-  const txns = await externalProvider.getBlock(block)
-  const r = []
-  for (let i = 0; i < txns.transactions.length; i++) {
-    r.push(externalProvider.getTransactionReceipt(txns.transactions[i]))
-  }
-  const receipts = await Promise.all(r)
-  const results = []
-  for (let i = 0; i < receipts.length; i++) {
-    const receipt = receipts[i]
-    const addresses = []
-    if (receipt.from) addresses.push(receipt.from.toLowerCase())
-    if (receipt.to) addresses.push(receipt.to.toLowerCase())
-    for (let i = 0; i < receipt.logs.length; i++) {
-      const l = receipt.logs[i]
-      l.topics.forEach(t => {
-        try {
-          const decoded = ethers.utils.defaultAbiCoder.decode(['address'], t).toString()
-          addresses.push(decoded.toLowerCase())
-        } catch (error) {
-        }
-      })
-    }
-    const txTargets = new Set(addresses)
-    results.push([block, txns.timestamp, receipt.transactionHash, txTargets])
-  }
-  return results
 }
