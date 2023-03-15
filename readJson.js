@@ -5,7 +5,7 @@ env(__dirname + '/.env')
 const { multiEth } = require('./utils')
 const { determineJobs } = require('./jobs.js')
 
-const basepath = process.env.BASEPATH + '/derived/transactions/'
+const basepath = process.env.BASEPATH + 'derived/transactions/'
 
 // Displays a count of remaining blocks for active jobs
 

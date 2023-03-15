@@ -7,7 +7,7 @@ const { determineJobs } = require('./jobs.js')
 
 const basepath = process.env.BASEPATH + '/derived/transactions/'
 
-  // Displays a count of remaining blocks for active jobs
+  // Manually Resets application state
 
   ; (async () => {
     const lastBlock = await multiEth.getLastBlock('mainnet')

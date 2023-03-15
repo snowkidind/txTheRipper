@@ -3,7 +3,8 @@ const util = require('util')
 const env = require('node-env-file')
 env(__dirname + '/.env')
 const { multiEth, signal } = require('./utils')
-const { determineJobs, nextAvailableJob } = require('./jobs.js')
+const { determineJobs, nextAvailableJob, lastCompletedJob } = require('./jobs.js')
+const { markTask } = require('./db/transactions.js')
 const { exec } = require('child_process')
 
 
@@ -62,7 +63,7 @@ const main = async () => {
       process.exit(1)
     }
 
-    await signal.sendMessageToGroup('Starting TxRipper synchronization...', process.env.SIGNAL_GROUP_NOTIFICATIONS)
+    // await signal.sendMessageToGroup('Starting TxRipper synchronization...', process.env.SIGNAL_GROUP_NOTIFICATIONS)
 
     // Determine if there are any jobs to do...
     const lastBlock = await multiEth.getLastBlock('mainnet')
@@ -81,11 +82,38 @@ const main = async () => {
       const jobs = await determineJobs(lastBlock) // at this stage this only checks if jobs havent been started.
       const job = await nextAvailableJob(jobs, false)
       if (job === false) {
-        console.log('No more jobs.')
+        // If there are no more jobs, there still may be a diff between last block and last synced block.
+        const lastCompleted = await lastCompletedJob(jobs)
+        const diff = lastBlock - lastCompleted.taskBlock
+        // When there is a difference between the highest block indexed and the last block mined
+        // This should be greater than n confirmations in order to prevent reorg based garbage in DB
+        console.log('The diff is: ' + diff + ' lastNode: ' + lastBlock + ' lastIndexed: ' + lastCompleted.taskBlock)
+        if (diff > 35) {
+          // mark the sync file as progress in order to process it on the next cycle
+          // unless we are currently already syncing
+          // the job to be marked must not already be in progress
+          let working = false
+          const _run = fs.readFileSync(runFile, 'utf8')
+          const run = JSON.parse(_run)
+          run.jobs.forEach((currentJob) => {
+            if (currentJob.mill === lastCompleted.highJob && currentJob.hth === lastCompleted.highTask) {
+              working = true
+              console.log('Already working on this task...')
+            }
+          })
+          if (!working) {
+            await markTask('progress', lastCompleted.highJob, lastCompleted.highTask)
+            console.log('Last task was marked to be updated because index is: ' + diff + ' blocks behind.')
+          }
+        } else {
+          // this can occur if the node gets stopped for some reason, or script gets called too soon
+          console.log('No more jobs.')
+        }
         inProgress = false
         return
       }
       console.log('deploying new worker ' + job.block + ' total jobs deployed: ' + totalJobsDeployed)
+      totalJobsDeployed += 1
       await syncOne() // resolves when complete
     }
 
@@ -98,7 +126,6 @@ const main = async () => {
       }
       if (workers.length < numberOfWorkers) {
         workers.push(worker())
-        totalJobsDeployed += 1
       }
       await sleep(5000) // pause to allow filesystem to catch up, and crash on only one sub process instead of all of them if it so may be
       let indexToRemove = -1
@@ -114,10 +141,10 @@ const main = async () => {
 
     // finish the process
     console.log('Awaiting Remaining Jobs...')
-    await signal.sendMessageToGroup('Awaiting Completion of remaining jobs...', process.env.SIGNAL_GROUP_NOTIFICATIONS)
+    // await signal.sendMessageToGroup('Awaiting Completion of remaining jobs...', process.env.SIGNAL_GROUP_NOTIFICATIONS)
     await Promise.all(workers) // in case any workers are still working
     console.log('Process Complete, deployed: ' + totalJobsDeployed + ' jobs.')
-    await signal.sendMessageToGroup('TxRipper Synchronization Completed!', process.env.SIGNAL_GROUP_NOTIFICATIONS)
+    // await signal.sendMessageToGroup('TxRipper Synchronization Completed!', process.env.SIGNAL_GROUP_NOTIFICATIONS)
   } catch (error) {
     console.log(error)
     await signal.sendMessageToGroup('TxRipper Error occurred in main: ' + JSON.parse(error, null, 4), process.env.SIGNAL_GROUP_NOTIFICATIONS)

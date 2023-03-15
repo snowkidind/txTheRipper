@@ -7,6 +7,10 @@ const rl = readline.createInterface({
   output: process.stdout
 })
 
+/* 
+  Write to the paused file in order to stop new jobs/processes from starting during sync
+*/
+
 const pauseFile = process.env.BASEPATH + 'derived/application/pause'
 
 const checkPaused = async () => {

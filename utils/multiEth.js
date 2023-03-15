@@ -5,7 +5,6 @@ const utils = require('./utils.js')
 const erc20abi = require('./lib/abi.json')
 let inited = false
 let provider = {}
-
 // provider support over multiple blockchains
 const chainId = {
   'bsc': 56,
@@ -49,9 +48,6 @@ const getWebSocket = (blockchain = 'mainnet') => {
   }
 }
 
-
-// Method to extract abi from etherscan automatically (still has issues)
-
 const proxyMap = [
   ['0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', '0xB7277a6e95992041568D9391D09d0122023778A2'], // USDC
   ['0x9BE89D2a4cd102D8Fecc6BF9dA793be995C22541', '0x9F344834752cb3a8C54c3DdCd41Da4042b10D0b9'], // Binance Peggy Token
@@ -71,19 +67,16 @@ const proxyMap = [
 
 const getAbi = async (_address, blockchain = 'mainnet') => {
 
-  const path = __dirname + '/../derived/'
+  const path = __dirname + '/../derived/abi/'
   const fileName = _address + '.json'
   const fullPath = path + fileName
   if (file.fileExists(fullPath)) {
     const fileAbi = await file.readFile(fullPath)
     return JSON.parse(fileAbi)
   } else {
-
     let address = _address
     if (address === '0x1') {
-      // will use USDC contract to represent USD
       return erc20abi
-
     } else {
       proxyMap.forEach((map) => {
         if (_address === map[0]) {
@@ -91,33 +84,27 @@ const getAbi = async (_address, blockchain = 'mainnet') => {
         }
       })
     }
-
-
     let url
     if (blockchain === 'mainnet') {
       url = 'https://api.etherscan.io/api?module=contract&action=getabi&address=' + address + '&apikey=' + process.env.ETHERSCAN_API_KEY
     } else if (blockchain === 'fantom') {
       url = 'https://api.ftmscan.com/api?module=contract&action=getabi&address=' + address + '&apikey=' + process.env.FTMSCAN_API_KEY
     }
-
     const response = await axios.get(url)
     if (response.data.status === '0') {
-      console.log('Error Abi lookup failed: ' + response.data.result)
+      // console.log('Error Abi lookup failed: ' + response.data.result)
       return
     }
-
-    console.log('Etherscan API. Punishment: 2 seconds.')
+    // console.log('Etherscan API. Punishment: 2 seconds.')
     await utils.sleep(2000)
-
-    // sometimes the proxy abi is returned. So we check the abi for the presence of the symbol and decimals
-    // let isProxy = false;
     JSON.parse(response.data.result).forEach((fn) => {
       if (fn.name === 'implementation' || fn.name === 'implementation()') {
-        console.log('WARNING: Proxy Detected...')
-        console.log('If you are having a crash here, do the following things:')
-        console.log('remove the file containing ' + address + ' from the derived directory')
-        console.log('update the proxyMap in crvUtils/getAbi.js to include the proxy implementation.')
-        console.log('this is a temporary workaround.')
+        // console.log('NOTICE: Proxy Detected...')
+        // console.log('If you are having a crash here, do the following things:')
+        // console.log('remove the file containing ' + address + ' from the derived directory')
+        // console.log('update the proxyMap in crvUtils/getAbi.js to include the proxy implementation.')
+        // console.log('this is a temporary workaround.')
+        return
       }
     })
     let abi = JSON.parse(response.data.result)
@@ -129,7 +116,7 @@ const getAbi = async (_address, blockchain = 'mainnet') => {
         thing.stateMutability = 'view';
       }
     })
-    console.log('writing new abi: ' + fullPath);
+    // console.log('writing new abi: ' + fullPath);
     await file.writeFile(fullPath, JSON.stringify(abi));
     const fileAbi = await file.readFile(fullPath);
     return JSON.parse(fileAbi)

@@ -1,14 +1,14 @@
 const fs = require('fs')
-const basepath = process.env.BASEPATH + '/derived/transactions/'
+const basepath = process.env.BASEPATH + 'derived/transactions/'
 // const perf = require('execution-time')()
 // const { v4 } = require('uuid')
 
 let txQueue = []
-const fileSizeMax = 300000000
+const fileSizeMax = 300000000 // 400000000 (max for json)
 let commitFile
 
 module.exports = {
-  
+
   syncHeight: async () => {
     const syncFile = basepath + 'syncHeight'
     if (!fs.existsSync(syncFile)) {
@@ -47,11 +47,38 @@ module.exports = {
   },
 
   searchAddress: async (address, afterBlock) => {
-    
+
   },
 
   queueSize: () => {
     return JSON.stringify(txQueue).length
+  },
+
+  highBlockForTask: async (mill, hth) => {
+    try {
+      const hthDir = basepath + mill + '/' + hth
+      const dir = fs.readdirSync(hthDir)
+      let fileIds = []
+      dir.forEach((file) => {
+        if (file.includes('.json')) {
+          fileIds.push(Number(file.split('.json')[0]))
+        }
+      })
+      fileIds = fileIds.sort((a, b) => { return a > b ? 1 : -1 }) // could be backwards who knows
+      const highFile = basepath + mill + '/' + hth + '/' + fileIds[fileIds.length - 1] + '.json'
+      const _json = fs.readFileSync(highFile, 'utf8')
+      const json = JSON.parse(_json)
+      const last = json[json.length - 1]
+      return last.block
+    } catch (error){
+      console.log(error)
+      return -1
+    }
+  },
+
+  markTask: async (status, mill, hth) => {
+    const hthDir = basepath + mill + '/' + hth + '/sync'
+    fs.writeFileSync(hthDir, status)
   }
 }
 
@@ -86,34 +113,49 @@ const readDirForBlock = async (block) => {
   return files
 }
 
+
 const estabishCommitFile = async (block) => {
+
+  // ensure dir structure exists and collect files in dir
   setupDirForBlock(block)
   let dir = await readDirForBlock(block)
-  // select a commit file.
+
+  // select the appropriate path
   const [mill, hth] = parentStructure(block)
+
   // dir may / will have multiple files we want the one with the highest block
-  // console.log(dir)
+
+  // if no files exist, create new based on the block
   if (dir.length === 0) {
     fs.writeFileSync(basepath + mill + '/' + hth + '/' + block + '.json', '[]') // initialize new commit file
     commitFile = basepath + mill + '/' + hth + '/' + block + '.json'
   } else {
+    
+    // Select the file with the highest block index
     const files = []
     dir.forEach((item) => {
       files.push(Number(item.replace('.json', '')))
     })
-    files.sort((a, b) => {return a > b ? 1 : -1}) // could be backwards who knows
-    commitFile = basepath + mill + '/' + hth + '/' + files[0] + '.json'
+    let highFile = 0
+    files.forEach((f) => {
+      if (f > highFile) {
+        highFile = f
+      }
+    })
+
+    commitFile = basepath + mill + '/' + hth + '/' + highFile + '.json'
     const stats = await fs.statSync(commitFile)
-    if (stats.size > fileSizeMax) { // 400000000 (max for json)
+    if (stats.size > fileSizeMax) { 
       // needs a new commit file created
       fs.writeFileSync(basepath + mill + '/' + hth + '/' + block + '.json', '[]') // initialize new commit file
       commitFile = basepath + mill + '/' + hth + '/' + block + '.json'
+      console.log('created new commit file: ' + commitFile)
     }
   }
 }
 
 const commitSync = async (block) => {
-  
+
   const stats = await fs.statSync(commitFile)
   if (stats.size > fileSizeMax) {
     // needs new commit file

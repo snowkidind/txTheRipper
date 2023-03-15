@@ -138,6 +138,7 @@ const makeJob = async (job, lastBlock) => {
   for (let block = lowBlock; block <= stop; block++) {
     currentBlock = block
 
+    /*
     // In the case of a disk error you can optionally add a range of blocks to extract remotely
     if (inBadBlockRange(block) === true) {
       const externalInfo = await externalBlockInfo(block)
@@ -153,6 +154,7 @@ const makeJob = async (job, lastBlock) => {
       }
       continue
     }
+    */
 
     // if another process failed theres no reason this process should exit because of a bad request, so we retry on failure
     // if it throws a second time you get ejected from the building
@@ -180,6 +182,7 @@ const makeJob = async (job, lastBlock) => {
       if (receipt.to) addresses.push(receipt.to.toLowerCase())
       for (let i = 0; i < receipt.logs.length; i++) {
         const l = receipt.logs[i]
+        if (l.address) addresses.push(l.address.toLowerCase()) // some smart contracts only show up here
         l.topics.forEach(t => {
           try {
             const decoded = ethers.utils.defaultAbiCoder.decode(['address'], t).toString()

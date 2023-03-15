@@ -1,8 +1,15 @@
 const fs = require('fs')
 
+const { dbTransactions } = require('./db')
+const { highBlockForTask } = dbTransactions
+
 const basepath = process.env.BASEPATH + '/derived/transactions/'
 const runFile = process.env.BASEPATH + 'derived/application/run'
 const pauseFile = process.env.BASEPATH + 'derived/application/pause'
+
+/* 
+  this is a library used to select jobs for processing.
+*/
 
 module.exports = {
 
@@ -87,6 +94,24 @@ module.exports = {
     run.jobs.push(job)
     if (issue) fs.writeFileSync(runFile, JSON.stringify(run, null, 4)) // add the job to the job file.
     return job
+  },
+
+  // Read the job file and return the highest block from the last completed job
+  lastCompletedJob: async (jobs) => {
+    let highJob = 0
+    for (job in jobs) {
+      if (Number(job) > highJob) {
+        highJob = job
+      }
+    }
+    let highTask = 0
+    for (task in jobs[String(highJob)]) {
+      if (Number(task) > highTask) {
+        highTask = task
+      }
+    }
+    const taskBlock = await highBlockForTask(highJob, highTask)
+    return { highJob: highJob, highTask: highTask, taskBlock: taskBlock }
   },
 
   // Remove job from application data to ensure the runner keeps trying this job.
