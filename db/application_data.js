@@ -2,6 +2,63 @@ const c = require('./common.js')
 
 module.exports = {
 
+  getBool: async (field) => {
+    try {
+      const q1 = 'SELECT value_bool FROM application_data WHERE field = $1'
+      const result = await c.query(q1, [field])
+      if (result.rows.length > 0) return result.rows[0].value_bool
+    } catch (error) {
+      console.log(error)
+    }
+  },
+
+  setBool: async (field, value) => {
+    try {
+      
+      const q1 = 'SELECT value_bool FROM application_data WHERE field = $1'
+      const result1 = await c.query(q1, [field])
+      if (result1.rows.length === 0) {
+        const q2 = 'INSERT INTO application_data ("field", "value_bool") VALUES ($1, $2)'
+        await c.query(q2, [field, value])
+      } else {
+        const q3 = 'UPDATE application_data SET "value_bool" = $1 WHERE "field" = $2'
+        await c.query(q3, [value, field])
+      }
+      const result2 = await c.query(q1, [field])
+      return result2.rows[0].value_bool
+    } catch (error) {
+      console.log(error)
+    }
+  },
+
+  getInt: async (field) => {
+    try {
+      const q1 = 'SELECT value_int FROM application_data WHERE field = $1'
+      const result = await c.query(q1, [field])
+      if (result.rows.length > 0) return result.rows[0].value_int
+    } catch (error) {
+      console.log(error)
+    }
+  },
+
+  setInt: async (field, value) => {
+    try {
+      const q1 = 'SELECT value_int FROM application_data WHERE field = $1'
+      const result1 = await c.query(q1, [field])
+      if (result1.rows.length === 0) {
+        const q2 = 'INSERT INTO application_data ("field", "value_int") VALUES ($1, $2)'
+        await c.query(q2, [field, value])
+      } else {
+        const q3 = 'UPDATE application_data SET "value_int" = $1 WHERE "field" = $2'
+        await c.query(q3, [value, field])
+      }
+      const result2 = await c.query(q1, [field])
+      return result2.rows[0].value_int
+    } catch (error) {
+      console.log(error)
+    }
+  },
+
   markPaused: async () => {
     try {
       const q1 = 'SELECT value_bool FROM application_data WHERE field = \'pause\''
@@ -25,7 +82,6 @@ module.exports = {
     try {
       const q1 = 'SELECT value_bool FROM application_data WHERE field = \'pause\''
       const result1 = await c.query(q1)
-      console.log('NOTICE: Marking Unpaused')
       if (result1.rows.length === 0) {
         const q2 = 'INSERT INTO application_data ("field", "value_bool") VALUES (\'pause\', false)'
         await c.query(q2)
@@ -77,8 +133,7 @@ module.exports = {
         const result2 = await c.query(q2)
         result = await c.query(q1)
       }
-      if (result.rows.length > 0) return { newStatus: result.rows[0].value_int }
-
+      return result.rows[0].value_int
     } catch (error) {
       console.log(error)
     }

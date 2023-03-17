@@ -7,7 +7,7 @@ const rl = readline.createInterface({
 })
 const fs = require('fs')
 
-const { getAnswer, execute } = require('./common.js')
+const { getAnswer } = require('./common.js')
 const { system } = require('../../utils')
 const { dbAppData } = require('../../db')
 const { log, logError, clearLog } = require('../../utils/log')
@@ -27,6 +27,7 @@ const mainMenu = async () => {
   const answer = await getAnswer(rl, menu, mainMenu)
   const args = answer.split(' ')
   const query = args[0]
+  const baseDir = process.env.BASEPATH + 'derived/tmp/'
 
   if (query === "n") {
     const message = "Nuke the entire Database?"
@@ -35,7 +36,12 @@ const mainMenu = async () => {
       const fullPath = __dirname + '/../../db/schema/schema_nuke.sql'
       const cmd = 'psql -d ' + process.env.DB_NAME + ' -f ' + fullPath
       await system.execCmd(cmd)
-      log('Nuked. You will have to fix this once partitions get involved.', 1)
+      const tmpFiles = await fs.readdirSync(baseDir)
+      for (let i = 0; i < tmpFiles.length; i++) {
+        console.log('rm: ' + baseDir + tmpFiles[i])
+        fs.rmSync(baseDir + tmpFiles[i])
+      }
+      log('Nuked.', 1)
       process.exit()
     } else {
       mainMenu()

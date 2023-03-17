@@ -11,6 +11,12 @@ const { log, printLogo, logError } = require('./utils/log')
 const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_NODE, 1)
 const application = require('./application/sync.js')
 
+const initialInit = async () => {
+  log('Initial Init. Welcome!', 1)
+  await dbAppData.setLastBlockSynced(46146) // first ever eth transaction was in 46147
+  await dbAppData.setBool('init', true)
+}
+
 const init = async () => {
 
   // ensure ethers it the right version
@@ -33,10 +39,14 @@ const init = async () => {
       }
     }
   }
-  await fs.writeFileSync(procStore, String(process.pid))
 
+  await fs.writeFileSync(procStore, String(process.pid))
   await dbInit.initTables() // ensure basic tables exist
   await dbInit.initApplicationDefaults()
+  if (await dbAppData.getBool('init') !== true) { // must happen after table inits
+    await initialInit()
+  }
+
   const blockHeight = await provider.getBlockNumber() 
   await dbInit.initPartitions(blockHeight) // ensure enough partitions to proceed
   await dbInit.assignPopularAddresses() // establish the contract cache
@@ -47,8 +57,10 @@ const interactiveMode = async () => {
   require('./application/cli')
 }
 
-const cleanup = (errorCode) => {
+const cleanup = async (errorCode) => {
   log('NOTICE: Exiting', 4, system.memStats(false))
+  log('NOTICE: Marking Unpaused', 1)
+  await dbAppData.markUnPaused()
   process.exit(errorCode)
 }
 
@@ -72,6 +84,6 @@ const cleanup = (errorCode) => {
     if (!found) cleanup()
   } catch (error) {
     logError(error, 'Application Error')
-    cleanup(1)
+    await cleanup(1)
   }
 })()

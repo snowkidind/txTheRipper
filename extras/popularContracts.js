@@ -1,11 +1,11 @@
 const env = require('node-env-file')
-env(__dirname + '/.env')
+env(__dirname + '/../.env')
 const fs = require('fs')
 const perf = require('execution-time')()
 const { v4 } = require('uuid')
 const ethers = require('ethers')
-const { multiEth } = require('./utils')
-const provider = multiEth.getProvider('mainnet')
+const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_NODE, 1)
+
 const interval = 425000
 const range = 240
 
@@ -14,7 +14,7 @@ const range = 240
   perpetually busy addresses. It takes 40 samplings of 240 consecutive blocks at intervals
   of 425000 blocks. The resultant set of addresses is then ranked and stored in a json file. 
 
-  Upon running it took 13.9 minutes to execute
+  Upon running it took 13.9 minutes to execute at a block height of 16700000
 */
 
 const decodeInputData = (inputData, verifyAddr) => {
@@ -130,7 +130,7 @@ const countDuplicates = (generations) => {
   ; (async () => {
     try {
       const generations = []
-      const height = await multiEth.getLastBlock('mainnet')
+      const height = await provider.getBlockNumber()
 
       const all = v4()
       perf.start(all)

@@ -1,13 +1,50 @@
-const { log, logError } = require('../utils/log')
+const fs = require('fs')
 
+const { dbAppData } = require('../db')
+const { log, logError } = require('../utils/log')
+const { memStats } = require('../utils/system')
+
+const baseDir = process.env.BASEPATH + 'derived/tmp/'
+let x = 0
 module.exports = {
 
-  updateAppData: async () => {
+  updateAppData: async (success, jobId) => {
+
     log('NOTICE: Updating Application Data with batch information', 2)
-  },
+    
+    const batchJsonFile = baseDir + jobId + '.json'
+    const batchSqlFile = baseDir + jobId + '.sql'
+    if (success === true) {
+      const _json = fs.readFileSync(batchJsonFile) // get the high block from the Json file before deleting
+      const json = JSON.parse(_json)
+      let block = -1
+      for (let i = 0; i < json.length; i++) {
+        if (json[i].block > block) {
+          block = json[i].block 
+        }
+      }
+      if (block === -1) {
+        const error = new TypeError('could not discover block count.')
+        logError(error, 'ERROR: finalize batch: could not discover block count.')
+        process.exit()
+      }
+      const lastBlock = await dbAppData.getLastBlockSynced()
+      if (lastBlock >= block) {
+        const error = new TypeError('last Block is greater the recent sync block')
+        logError(error, 'ERROR: finalize batch: last Block is greater the recent sync block')
+        process.exit(1)
+      }
 
-  cleanBatch: async () => {
-    log('NOTICE: Finalizing completed batch', 2)
+      await dbAppData.setLastBlockSynced(block)
+      // if (x === 5 ) process.exit()
+      x += 1
+      fs.rmSync(batchJsonFile)
+      fs.rmSync(batchSqlFile)
+      log('Round completed to block ' + block + ', preparing to get next block range...',1)
+      memStats(true)
+      await sleep(1000) // Pause to reflect for a second...
+    }
   }
-
 }
+
+const sleep = (m) => { return new Promise(r => setTimeout(r, m)) }

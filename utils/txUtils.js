@@ -39,17 +39,20 @@ module.exports = {
       let inputFound = false
       let topics = []
       group.forEach((item) => {
-        if (!inputFound) {
+        if (!inputFound) { // only process inputs once
           if (item.action.input !== '0x' && typeof item.action.input !== 'undefined') {
-            const inputTopics = decodeInputData(item.action.input, false)
+            const inputTopics = module.exports.decodeInputData(item.action.input, false)
             if (inputTopics.length > 0) {
               topics = [...topics, ...inputTopics]
               inputFound = true
             }
           }
         }
-        topics.push(item.action.from)
-        topics.push(item.action.to)
+        if (item.action.from) topics.push(item.action.from)
+        if (item.action.to) topics.push(item.action.to)
+        if (item.action.init && !item.error) {
+          if (item.result.address) topics.push(item.result.address) // add newly generated contract addrs
+        }
       })
       txns[hash] = new Set(topics)
     }

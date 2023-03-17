@@ -7,7 +7,7 @@ TxRipper will index the accounts and transactions in the database to allow for l
 1. Get all transaction info related to an address
 
 ```
-    SELECT tr.id, tr.block, tr.timestamp, tr.hash, t.account 
+    SELECT tr.id, tr.block, tr.timestamp, encode(tr.hash, 'escape') AS hash, encode(t.account, 'escape') AS account 
     FROM transactions tr 
     INNER JOIN topic t 
     ON tr.id = t.parent 
@@ -28,7 +28,7 @@ TxRipper will index the accounts and transactions in the database to allow for l
 3. Retrieve accounts associated with transaction 
 
 ```
-    SELECT * FROM topic 
+    SELECT id, parent, encode(account, 'escape') as account FROM topic 
     WHERE parent = 
       ( SELECT id 
         FROM transactions 
