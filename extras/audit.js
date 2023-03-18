@@ -7,7 +7,7 @@ const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_NODE, 1)
 const { jobTimer, txutils } = require('../utils')
 const { start, stop, getId } = jobTimer
 const { log, logError } = require('../utils/log')
-const { dbAppData, dbTransactionsPg, dbTopic, dbCommon, dbContractCache } = require('../db')
+const { dbAppData, dbTransactions, dbTopic, dbCommon, dbContractCache } = require('../db')
 const { processBlock } = require('../application/extractBatch')
 
 /* 
@@ -40,7 +40,7 @@ const auditBlock = async (blockHeight) => {
       console.log('    ' + account)
     }
     console.log()
-    const headers = await dbTransactionsPg.getTransactionHeaders(hash)
+    const headers = await dbTransactions.getTransactionHeaders(hash)
     const topics = await dbTopic.getTopicsForParent(headers[0].id)
     console.log('  Database Info:')
     topics.forEach((t) => {

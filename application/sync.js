@@ -54,8 +54,12 @@ module.exports = {
       The numeric account ID is then stored in the DB. This causes a dependency on lookup
       tables but it extends the life of SSD's and NVMe's
     */
-    await convertBatchAccounts(jobId)
 
+    const indexCacheDisable = process.env.INDEX_CACHE_DISABLE || 'false'
+    if (indexCacheDisable === 'false') {
+      await convertBatchAccounts(jobId)
+    }
+    
     /* 
       Once the JSON files have been processed, then the script generates a sql file for postgres
       to run (on a separate thread) This utilizes multi cores.

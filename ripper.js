@@ -10,6 +10,7 @@ const { log, printLogo, logError } = require('./utils/log')
 
 const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_NODE, 1)
 const application = require('./application/sync.js')
+const popularDir = process.env.BASEPATH + '/derived/popular/'
 
 const initialInit = async () => {
   log('Initial Init. Welcome!', 1)
@@ -49,6 +50,27 @@ const init = async () => {
 
   const blockHeight = await provider.getBlockNumber() 
   await dbInit.initPartitions(blockHeight) // ensure enough partitions to proceed
+
+  const indexCacheDisable = process.env.INDEX_CACHE_DISABLE || 'false'
+  if (indexCacheDisable === 'false') {
+    const accountsFile = popularDir + 'topAccts.json'
+    let generate = false
+    if (fs.existsSync(accountsFile)) { // double check there is at least an entry in accountsFile
+      const _accounts = fs.readFileSync(accountsFile)
+      let accounts = JSON.parse(_accounts)
+      if (accounts.length === 0) {
+        generate = true
+      }
+    } else { // the file doesnt exist at all
+      generate = true
+    }
+    if (generate === true) {
+      log('NOTICE: No popular Accounts file. This will be generated before proceeding.', 1)
+      log('Please wait.  The process will be executed on a separate thread and will take around 10 - 15 minutes. See README.md.', 1)
+      log('to check on progress, observe /derived/application/log', 1)
+      await system.execCmd(process.env.EXEC_NODE + ' ' + process.env.BASEPATH + 'extras/popularContracts.js')
+    }
+  }
   await dbInit.assignPopularAddresses() // establish the contract cache
 }
 

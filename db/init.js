@@ -124,14 +124,27 @@ module.exports = {
   },
 
   assignPopularAddresses: async () => {
+
+    const indexCacheDisable = process.env.INDEX_CACHE_DISABLE || 'false'
+    if (indexCacheDisable === 'true') {
+      return
+    }
+
     const size = await contractCache.cacheSize()
     if (size > 0) {
       log('NOTICE: The contract cache was previously initialized.', 2)
       return // the contract cache was already initialized...
     }
+
     const accountsFile = popularDir + 'topAccts.json'
-    const _accounts = fs.readFileSync(accountsFile)
-    let accounts = JSON.parse(_accounts)
+    // if the file got renamed or deleted
+    let accounts
+    if (!fs.existsSync(accountsFile)) {
+      accounts = []
+    } else {
+      const _accounts = fs.readFileSync(accountsFile)
+      accounts = JSON.parse(_accounts)
+    }
     if (accounts.length === 0) {
       log('ERROR: No popular Accounts', 1)
       process.exit()

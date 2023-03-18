@@ -244,3 +244,8 @@ Bangkok time zone (this is currently unimplemented.)
 ```
 UTC_TZ_OFFSET=7
 ```
+
+# TODO's
+
+Load in sql functions on init
+

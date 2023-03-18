@@ -6,8 +6,12 @@ const { v4 } = require('uuid')
 const ethers = require('ethers')
 const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_NODE, 1)
 
+process.env.LOG_TO_FILE = true
+const { log, logError } = require('../utils/log')
+
 const interval = 425000
 const range = 240
+
 
 /* 
   the intention of this script is to poll sections of the blockchain in order to discover 
@@ -96,7 +100,7 @@ const startPoints = (interval, stopAt) => {
 }
 
 const popular = async (startPoint) => {
-  console.log('Start at: ' + startPoint)
+  log('Grabbing an hour of transactions starting from block: ' + startPoint, 1)
   const generation = []
   for (let block = startPoint; block < (startPoint + range); block++ ){
     const trace = await provider.send('trace_block', [block])
@@ -129,6 +133,8 @@ const countDuplicates = (generations) => {
 
   ; (async () => {
     try {
+      log('NOTICE: Generating commonly used addresses', 1)
+
       const generations = []
       const height = await provider.getBlockNumber()
 
@@ -142,13 +148,13 @@ const countDuplicates = (generations) => {
       }
 
       const accts = countDuplicates(generations)
-      fs.writeFileSync(__dirname + '/derived/popular/topAccts.json', JSON.stringify(accts, null, 4))
+      fs.writeFileSync(process.env.BASEPATH + '/derived/popular/topAccts.json', JSON.stringify(accts, null, 4))
       
       const allDuration = perf.stop(all)
-      console.log('Job completed in ' + allDuration.preciseWords)
+      log('Common address generation job completed in ' + allDuration.preciseWords, 1)
 
     } catch (error) {
-      console.log(error)
+      logError(error)
     }
-    process.exit()
+    process.exit(0)
   })()

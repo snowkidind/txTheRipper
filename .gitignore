@@ -10,6 +10,12 @@ pgdata/
 data/*
 log/*
 notes/
-derived/
 testbinfile
 archive/
+
+derived/
+!derived/abi/abi.txt
+!derived/application/application.txt
+!derived/popular/popular.txt
+!derived/scrape/scrape.txt
+!derived/tmp/tmp.txt
