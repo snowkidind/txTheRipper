@@ -2,6 +2,30 @@
 
 TxRipper will index the accounts and transactions in the database to allow for looking up some basic things.
 
+The way the indexer is structured, it also retrieves accounts from delegate calls and input data, so when you compare the results to the "pretty" results of etherscan, you can see all of the accounts that are involved with a transaction.
+
+It does not calculate state differences, and expects you to have an accessible archive node at the ready to further parse database results.
+
+
+here is an example where an account of interested is provided and the transactions related to that account are returned:
+
+```
+
+accountInfo(Account, FromBlock, Limit, Offset)
+
+select * from accountInfo('0xb11b8714f35b372f73cb27c8f210b1ddcc29a084', 0, NULL, 0);
+
+Results: 
+
+    id    |  block  | timestamp  |                                hash                                |                  account
+----------+---------+------------+--------------------------------------------------------------------+--------------------------------------------
+ 19769149 | 3452054 | 1490969199 | 0xf5fdc8c9839f299b85520112e64c484737da6df824bd97823cc44b71ffc42b11 | 0xb11b8714f35b372f73cb27c8f210b1ddcc29a084
+ 19730022 | 3449641 | 1490934438 | 0xed98d64c711660b68195b4604e881cc0e3cd4fac3582186391533fb69bef32aa | 0xb11b8714f35b372f73cb27c8f210b1ddcc29a084
+(2 rows)
+
+```
+
+
 ***
 # The Process of indexing
 
@@ -14,6 +38,20 @@ In order to save a lot of disk space and read writes, popular accounts are colle
 Once the JSON files have been processed, then the script generates a sql file for postgres to run (on a separate thread) This utilizes multi cores.
 
 Finally, after a successful PG query, the app data is updated with the latest block information and the whole process is restarted from the top.
+
+In order to make querying the database easier, a translate() function has been included, which serves as a easy way to implement encode(x, 'escape') when the results are mixed in with other regular data:
+
+```
+Function translate(account), use where value is stored as "bytea"
+
+select translate(account) as account from topic where id = 31438885;
+
+Results:
+                  account
+--------------------------------------------
+ 0xd34da389374caad1a048fbdc4569aae33fd5a375
+```
+
 
 ***
 
@@ -51,7 +89,7 @@ Finally, after a successful PG query, the app data is updated with the latest bl
 ```
 
 
-# index cache
+# Account Indexed Cache
 
 txRipper uses an index cache to record accounts that appear millions of times in the database, having a notable impact on account size. Think USDT, Uniswap Pools, Binance EOA's. These busy Ids are stored in binary (thats BYTEA in PG). 
 

@@ -4,7 +4,7 @@ const ethers = require('ethers')
 const fs = require('fs')
 
 const { dbInit, dbAppData } = require('./db')
-const { system } = require('./utils')
+const { system, events } = require('./utils')
 
 const { log, printLogo, logError } = require('./utils/log')
 
@@ -25,7 +25,7 @@ const init = async () => {
     log('Error: the version of ethers.js should be version 5.x.x', 1)
   }
 
-  // dont run if another process is currently running (protects the db file from unscrupulous double writes)
+  // dont run if another process is currently running
   const procDir = '/proc'
   const procStore = __dirname + '/derived/application/proc'
   if (fs.existsSync(procStore)) {
@@ -58,29 +58,49 @@ const interactiveMode = async () => {
 }
 
 const cleanup = async (errorCode) => {
-  log('NOTICE: Exiting', 4, system.memStats(false))
-  log('NOTICE: Marking Unpaused', 1)
-  await dbAppData.markUnPaused()
-  process.exit(errorCode)
+  return new Promise (async (resolve) => {
+    events.emitter.on('close', async (source) => {
+      log(source + ' has finished', 1)
+      log('NOTICE: Exiting', 4, system.memStats(false))
+      log('NOTICE: Marking Unpaused', 2)
+      await dbAppData.markUnPaused()
+      process.exit(errorCode)
+    })
+    await dbAppData.markPaused()
+  })
 }
+
 
 ;(async () => {
   try {
     printLogo()
-    await init()
+
+    process.on('SIGHUP', async () => {
+      log('NOTICE: >>>>>>> SIGHUP acknowledged <<<<<< Will Exit at end of this cycle.', 1)
+      await cleanup(0)
+    })
+    process.on('SIGINT', async () => {
+      log('NOTICE: >>>>>>> Ctl-C acknowledged <<<<<< Will Exit at end of this cycle.', 1)
+      await cleanup(0)
+    })
+    process.on('SIGTERM', async () => {
+      log('NOTICE: >>>>>>> SIGTERM acknowledged <<<<<< Will Exit at end of this cycle.', 1)
+      await cleanup(0)
+    })
+
     let found = false
     for (let i = 2; i < process.argv.length; i++) {
       if (process.argv[i] === 'cli' || process.argv[i] === 'i') {
-        await interactiveMode()
         found = true
       }
     }
-    if (!found) {
+    await init()
+    if (found) {
+      await interactiveMode()
+    } else {
       await application.synchronize()
     }
-    process.on('SIGHUP', () => { cleanup(0) })
-    process.on('SIGINT', () => { cleanup(0) })
-    process.on('SIGTERM', () => { cleanup(0) })
+    
     if (!found) cleanup()
   } catch (error) {
     logError(error, 'Application Error')

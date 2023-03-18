@@ -82,6 +82,12 @@ module.exports = {
     } catch (error) {
       console.log(error)
     }
+  },
+
+  showIndexes: async (table) => {
+    const q = 'SELECT indexname, indexdef FROM pg_indexes WHERE tablename = $1;'
+    const result = await module.exports.query(q, [table])
+    return result.rows
   }
 }
 

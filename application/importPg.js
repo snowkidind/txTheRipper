@@ -27,6 +27,11 @@ const addDb = (fileToRead) => {
 module.exports = {
   importTransactionsToPg: async (jobId) => {
 
+    const pause = await dbAppData.pauseStatus()
+    if (pause) {
+      log('NOTICE: >>>>>>> Pause flag detected <<<<<< Will Exit at end of this cycle.', 1)
+    }
+
     const batchJsonFile = baseDir + jobId + '.json'
 
     // To calculate topic.parentId in a deterministic way we cannot rely on 

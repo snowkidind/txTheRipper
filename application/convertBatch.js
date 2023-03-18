@@ -1,5 +1,5 @@
 const fs = require('fs')
-const { dbContractCache } = require('../db')
+const { dbContractCache, dbAppData } = require('../db')
 const { jobTimer } = require('../utils')
 const { start, stop } = jobTimer
 const { log } = require('../utils/log')
@@ -9,8 +9,13 @@ const baseDir = process.env.BASEPATH + 'derived/tmp/'
 
 module.exports = {
   convertBatchAccounts: async (jobId) => {
+    const pause = await dbAppData.pauseStatus()
+    if (pause) {
+      log('NOTICE: >>>>>>> Pause flag detected <<<<<< Will Exit at end of this cycle.', 1)
+    }
+
     const batchJsonFile = baseDir + jobId + '.json'
-    log('NOTICE: Converting batch to addressCache', 2)
+    log('NOTICE: Converting batch to addressCache', 1)
     start('Convert Batch')
     const beforestats = await fs.statSync(batchJsonFile)
     let cacheLimit = await dbContractCache.cacheSize()
@@ -31,6 +36,7 @@ module.exports = {
           }
         }
       }
+      if (i % 500 === 0) log('Converting batch to addressCache: ' + percent(addressCache.length, i) + '%', 1)
     }
     fs.writeFileSync(batchJsonFile, stringify(json, null, 4))
     const afterestats = await fs.statSync(batchJsonFile)
@@ -38,6 +44,10 @@ module.exports = {
     stop('Convert Batch', true)
     log('NOTICE: Address Conversion saved ' + diff + ' bytes on this batch.', 2)
   }
+}
+
+const percent = (size, i) => {
+  return Math.floor(i / size * 100)
 }
 
 const stringify = (obj) => {

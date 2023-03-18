@@ -1,6 +1,7 @@
 const env = require('node-env-file')
 env(__dirname + '/../../.env')
 const readline = require('node:readline')
+
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout

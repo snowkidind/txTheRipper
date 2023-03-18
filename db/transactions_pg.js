@@ -11,5 +11,11 @@ module.exports = {
     } catch (error) {
       console.log(error)
     }
+  },
+
+  getTransactionHeaders: async (hash) => {
+    const q = 'SELECT id, block, timestamp FROM transactions WHERE hash = $1'
+    const result = await c.query(q, [hash])
+    return result.rows
   }
 }

@@ -3,6 +3,7 @@ const fs = require('fs')
 const { dbAppData } = require('../db')
 const { log, logError } = require('../utils/log')
 const { memStats } = require('../utils/system')
+const events = require('../utils/events.js')
 
 const baseDir = process.env.BASEPATH + 'derived/tmp/'
 let x = 0
@@ -11,7 +12,12 @@ module.exports = {
   updateAppData: async (success, jobId) => {
 
     log('NOTICE: Updating Application Data with batch information', 2)
-    
+
+    const pause = await dbAppData.pauseStatus()
+    if (pause) {
+      log('NOTICE: >>>>>>> Pause flag detected <<<<<< Will Exit at end of this cycle.', 1)
+    }
+
     const batchJsonFile = baseDir + jobId + '.json'
     const batchSqlFile = baseDir + jobId + '.sql'
     if (success === true) {
@@ -42,8 +48,13 @@ module.exports = {
       fs.rmSync(batchSqlFile)
       log('Round completed to block ' + block + ', preparing to get next block range...',1)
       memStats(true)
-      await sleep(1000) // Pause to reflect for a second...
+      // await sleep(1000) // Pause to reflect for a second...
     }
+
+    // let the system that the loop has reached its end and if they want to exit its all good
+    events.emitMessage('close', 'finalize')
+    await sleep(200)
+
   }
 }
 

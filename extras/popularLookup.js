@@ -145,7 +145,7 @@ const getAccountInfo = async (account) => {
 
   // If unable to get the abi at all, scrape
   if (!abi) {
-    await dbRedis.set('ripper:popular:noabi:' + account, 2592000) // no abi mark as failed, invalid after 30d
+    await dbRedis.set('ripper:popular:noabi:' + account, 2592000, 2592000) // no abi mark as failed, invalid after 30d
     return await scrapeEtherscan(account, 'UNVERIFIED')
   }
 

@@ -1,7 +1,8 @@
 const ethers = require('ethers')
 const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_NODE, 1)
 const { log } = require('../utils/log')
-const { events } = require('../utils/')
+const { events, jobTimer } = require('../utils/')
+const { start, stop } = jobTimer
 const { extractBatch } = require('./extractBatch.js')
 const { convertBatchAccounts } = require('./convertBatch.js')
 const { importTransactionsToPg } = require('./importPg.js')
@@ -14,6 +15,8 @@ module.exports = {
 
   synchronize: async () => {
 
+    start('Synchronize - The whole round.')
+    
     log('NOTICE: Beginning synchronization process.', 1)
     if (await dbAppData.pauseStatus() === true) {
       log('WARNING: Application is paused, exiting safely', 1)
@@ -42,6 +45,7 @@ module.exports = {
       complete because of an issue, some inert files may be left around. As long as the
       application isnt running, it is safe to remove files from /derived/tmp
     */
+
     const jobId = await extractBatch(blockHeight, lastSyncPoint)
 
     /* 
@@ -63,6 +67,9 @@ module.exports = {
       information and the process is restarted from the top.
     */
     await updateAppData(success, jobId)
+
+    stop('Synchronize - The whole round.')
+
     await module.exports.synchronize()
   }
 }

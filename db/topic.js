@@ -23,5 +23,18 @@ module.exports = {
     } catch (error) {
       console.log(error)
     }
+  },
+
+  getTopicsForParent: async (parentId) => { 
+    try {
+      const q = 'SELECT id, translate(account) AS account FROM topic WHERE parent = $1'
+      const result = await c.query(q, [parentId])
+      if (result.rows.length > 0) {
+        return result.rows
+      }
+    } catch (error) {
+      console.log(error)
+    }
   }
+
 }

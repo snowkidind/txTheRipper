@@ -63,7 +63,6 @@ module.exports = {
     try {
       const q1 = 'SELECT value_bool FROM application_data WHERE field = \'pause\''
       const result1 = await c.query(q1)
-      console.log('NOTICE: Marking Paused')
       if (result1.rows.length === 0) {
         const q2 = 'INSERT INTO application_data ("field", "value_bool") VALUES (\'pause\', true)'
         await c.query(q2)

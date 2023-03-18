@@ -1,17 +1,6 @@
 
 module.exports = {
 
-  /* 
-   * return a random timestamp between 12-31-2014 07-25-2026
-   */
-  randomTimeInRange: (past = 1419958800000, future = 1784941200000) => {
-    const date = randomTime(past, future)
-    const stamp = module.exports.timeFmtDb(date)
-    const chop = stamp.substring(0, stamp.length - 3)
-    const rand = String(randomTime(0, 999999))
-    return chop + rand.padEnd(6, '0')
-  },
-
   timeFmtDb: (e) => {
     let epoch = e
     if (epoch.length === 10) epoch = e * 1000
@@ -29,6 +18,34 @@ module.exports = {
     return (Number(date.getFullYear())) + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ':' + seconds;
   },
 
+  epochFromDate: (date) => {
+    return new Date(date).getTime()
+  },
+
+  dateNowBKK: () => {
+    return Date.now()
+  },
+
+  dateNowUTC: () => {
+    const now = Date.now()
+    const offset = Number(process.env.UTC_TZ_OFFSET) || 1
+    const backInTime = now - (3600000 * offset)
+    return backInTime
+  }
+}
+
+/*
+  randomTimeInRange: (past = 1419958800000, future = 1784941200000) => {
+    const randomTime = (min, max) => { // min and max included 
+      return Math.floor(Math.random() * (max - min + 1) + min)
+    }
+    const date = randomTime(past, future)
+    const stamp = module.exports.timeFmtDb(date)
+    const chop = stamp.substring(0, stamp.length - 3)
+    const rand = String(randomTime(0, 999999))
+    return chop + rand.padEnd(6, '0')
+  },
+
   timeFmtYMD: (e) => {
     let epoch = e
     if (epoch.length === 10) epoch = e * 1000
@@ -39,7 +56,6 @@ module.exports = {
     if (month < 10) month = '0' + month;
     return (Number(date.getFullYear())) + '-' + month + '-' + day;
   },
-
 
   timeFmtShort: (e) => {
     let epoch = e
@@ -102,17 +118,6 @@ module.exports = {
     let month = date.getMonth() + 1
     if (month < 10) month = '0' + month
     return (Number(date.getFullYear())) + '-' + month + '-' + day + 'T' + hours + ':' + minutes + ':' + seconds + '.000Z'
-  },
-
-  dateNowBKK: () => {
-    return Date.now()
-  },
-
-  dateNowUTC: () => {
-    const now = Date.now()
-    const offset = Number(process.env.UTC_TZ_OFFSET) || 1
-    const backInTime = now - (3600000 * offset)
-    return backInTime
   },
 
   dateNowUTCdb: () => {
@@ -223,11 +228,6 @@ module.exports = {
     return thirty
   },
 
-
-  epochFromDate: (date) => {
-    return new Date(date).getTime()
-  },
-
   nextPeriodOpen: (openAt, maturityPeriodHours) => {
     const epoch = module.exports.epochFromDate(openAt)
     const mpms = 1000 * 60 * 60 * maturityPeriodHours
@@ -253,16 +253,18 @@ module.exports = {
     }
     return false
   },
-
-  /*
-  * determine the epoch range of the last periods
-  * this snaps periods to the latest date, not the current time, leaving an 
-  * incomplete period at the bottom of the stack. setting returnIncompletePeriod to false 
-  * removes the incompleted period, true includes it. numOfPeriods returned will always be 
-  * numberOfPeriods regardless
-  * Array of periods is returned sorted with newest period at index 0 
-  * duration string '1m', '15m', '1h', '4h', 'd', 'w'
-  */
+*/
+  // /*
+  // * determine the epoch range of the last periods
+  // * this snaps periods to the latest date, not the current time, leaving an 
+  // * incomplete period at the bottom of the stack. setting returnIncompletePeriod to false 
+  // * removes the incompleted period, true includes it. numOfPeriods returned will always be 
+  // * numberOfPeriods regardless
+  // * Array of periods is returned sorted with newest period at index 0 
+  // * duration string '1m', '15m', '1h', '4h', 'd', 'w'
+  // */
+  
+/*
   determinePeriods: (duration, numOfPeriods, returnIncompletePeriod = false, fromDate = new Date()) => {
 
     const now = module.exports.epochFromDate(fromDate) // in ms
@@ -338,9 +340,8 @@ module.exports = {
     return new Date(Math.floor(epoch / ms) * ms)
   },
 
-  /* 
-    returnIncompletePeriod means the period at the end will contain time in the future of the ending time. 
-  */
+
+  // returnIncompletePeriod means the period at the end will contain time in the future of the ending time. 
   getGrid: (begin, ending, minutes, returnIncompletePeriod = true) => {
     const from = new Date(begin).getTime()
     const to = new Date(ending).getTime()
@@ -357,9 +358,8 @@ module.exports = {
     return grid
   },
 
-  /* 
-    A grid where the end time is the key
-  */
+
+  // A grid where the end time is the key
   getReverseGrid: (ending, begin, minutes, returnIncompletePeriod = true) => {
     const from = new Date(begin).getTime()
     const to = new Date(ending).getTime()
@@ -377,9 +377,9 @@ module.exports = {
     return grid
   },
 
-  /*
- * Return the interval of a given period
- */
+
+  //  * Return the interval of a given period
+
   lookupInterval: (interval) => {
     validInterval = {
       '1m': 60000,
@@ -475,13 +475,5 @@ module.exports = {
     }
     return module.exports.timeFmtDb(future)
   }
-}
 
-function randomTime(min, max) { // min and max included 
-  return Math.floor(Math.random() * (max - min + 1) + min)
-}
-
-
-function view(epoch) {
-  return module.exports.timeFmtDb(epoch)
-}
+*/

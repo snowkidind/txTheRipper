@@ -18,7 +18,7 @@ exports.stop = (title, logTimes) => {
     }
   })
   const allDuration = perf.stop(job)
-  const message = 'Job ' + title + ' completed in ' + allDuration.preciseWords
+  const message = 'Job: ' + title + ' completed in ' + allDuration.preciseWords
   if (logTimes)  log(message, 1)
   return allDuration
 }
