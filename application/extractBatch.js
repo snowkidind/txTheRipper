@@ -118,8 +118,8 @@ module.exports = {
   },
 
   processBlock: async (block) => {
-    const a = await provider.getBlock(block)
-    const b = provider.send('trace_block', [block])
+    const a = await provider.getBlock(Number(block))
+    const b = provider.send('trace_block', [Number(block)])
     const [blockInfo, tb] = await Promise.all([a, b])
     const [transactions, newContracts] = extractTopicsFromInputData(tb)
     if (block % 200 === 0) {

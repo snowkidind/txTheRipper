@@ -19,8 +19,7 @@ const { processBlock } = require('../application/extractBatch')
 const noIndexMax = 4000000
 
 const auditBlock = async (blockHeight) => {
-
-  const blockNode = await provider.getBlock(blockHeight)
+  const blockNode = await provider.getBlock(Number(blockHeight))
   const blockInfo = await await processBlock(blockHeight)
   if (blockNode.transactions.length !== blockInfo.txCount ||
     blockNode.transactions.length !== Object.keys(blockInfo.transactions).length) {
@@ -81,9 +80,18 @@ const auditBlock = async (blockHeight) => {
 ;(async () => {
 
   try {
-    start('Audit')
-    const highBlock = await dbAppData.getLastBlockSynced()
 
+    let highBlock = await dbAppData.getLastBlockSynced()
+    log('Application is synced to block height: ' + highBlock, 1)
+    if (process.argv.length > 2) {
+      if (process.argv[2] < highBlock) {
+        highBlock = process.argv[2]
+      } else {
+        console.log('Couldn\'t interpret request, using last block synced: ' + highBlock)
+      }
+    }
+
+    start('Audit')
     let noIndexes = false
     const indexesTx = await dbCommon.showIndexes('transactions')
     const indexesT = await dbCommon.showIndexes('topic')
@@ -91,7 +99,7 @@ const auditBlock = async (blockHeight) => {
       log('Indexing is not complete. You should wait until the indexing is added to run a complete audit', 1)
       noIndexes = true
     }
-    log('Application is synced to block height: ' + highBlock, 1)
+    
     if (highBlock > noIndexMax && noIndexes) {
       let message = '\n\nERROR: Block sync is above ' + noIndexMax + ': currently: ' + highBlock + '\n'
       message += 'Without indexing, database queries for this test will take too long to complete.\n'
