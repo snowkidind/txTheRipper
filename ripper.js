@@ -170,7 +170,7 @@ const cleanup = async (errorCode) => {
       wsProvider.on("block", async (block) => {
         const lastSyncPoint = await dbAppData.getInt('block_sync')
         const diff = block - lastSyncPoint
-        log('New Block:' + block + ' behind by: ' + diff + 'blocks', 1)
+        log('New Block:' + block + ' behind by: ' + diff + ' blocks', 1)
         const working = await dbAppData.getBool('working')
         if (working === false && dont === false) {
           const response = await application.synchronize(block)

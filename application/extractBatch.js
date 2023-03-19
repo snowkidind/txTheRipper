@@ -1,9 +1,10 @@
 const ethers = require('ethers')
 const fs = require('fs')
 
-const { jobTimer, txutils } = require('../utils')
+const { jobTimer, txutils, dateutils } = require('../utils')
 const { extractTopicsFromInputData } = txutils
 const { start, stop, getId } = jobTimer
+const { timeFmtDb, dateNowBKK } = dateutils
 const { log, logError } = require('../utils/log')
 const { dbAppData } = require('../db')
 
@@ -125,7 +126,7 @@ module.exports = {
     const [blockInfo, tb] = await Promise.all([a, b])
     const [transactions, newContracts] = extractTopicsFromInputData(tb)
     if (block % 200 === 0) {
-      log('Block: ' + blockInfo.number + ' timestamp: ' + blockInfo.timestamp + ' tx: ' + Object.keys(transactions).length + ' newContracts: ' + newContracts.length, 2)
+      log('Block: ' + blockInfo.number + ': ' + timeFmtDb(Number(blockInfo.timestamp) * 1000) + ' tx: ' + Object.keys(transactions).length + ' newContracts: ' + newContracts.length, 2)
     }
     return {
       block: blockInfo.number,
