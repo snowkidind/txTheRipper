@@ -255,12 +255,20 @@ module.exports = {
   }
 }
 
+const parseDbToDisplay = (string) => {
+  const lines = string.split('\n')
+  lines.forEach((l) => {
+    log(l, 1)
+  })
+}
+
+
 const execSqlFile = (fullPath) => {
   return new Promise((resolve) => {
     exec('psql -d ' + process.env.DB_NAME + ' -f ' + fullPath, (error, stdout, stderr) => {
       if (error) { log(error.message, 1) }
-      if (stderr) { logError (stderr, 'Sql Error') }
-      log(stdout.replace(/\n*$/, ""))
+      if (stderr) { logError (stderr, 'Sql Messages') }
+      parseDbToDisplay(stdout)
       resolve()
     })
   })

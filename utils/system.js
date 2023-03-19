@@ -1,6 +1,13 @@
 const { exec } = require('child_process')
 const { log } = require('../utils/log')
 
+const parseDbToDisplay = (string) => {
+  const lines = string.split('\n')
+  lines.forEach((l) => {
+    log(l, 1)
+  })
+}
+
 module.exports = {
 
   memStats: (print, title = 'System Memory Usage') => {
@@ -20,7 +27,7 @@ module.exports = {
       exec(cmd, (error, stdout, stderr) => {
         if (error) reject(error.message)
         if (stderr) reject(stderr)
-        if (logging) log(stdout.replace(/\n*$/, ""), 1)
+        if (logging) parseDbToDisplay(stdout)
         resolve()
       })
     })
