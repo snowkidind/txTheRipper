@@ -10,9 +10,9 @@ here is an example where an account of interested is provided and all of the tra
 
 ```
 
-accountInfo(Account, FromBlock, Limit, Offset)
+account_info(Account, FromBlock, Limit, Offset)
 
-select * from accountInfo('0xb11b8714f35b372f73cb27c8f210b1ddcc29a084', 0, NULL, 0);
+select * from account_info('0xb11b8714f35b372f73cb27c8f210b1ddcc29a084', 0, NULL, 0);
 
 Results: 
 
@@ -45,7 +45,7 @@ Finally, after a successful PG query, the app data is updated with the latest bl
 1. Get all transaction info related to an address in a formatted table
 
 ```
-    select * from accountInfo('0xb11b8714f35b372f73cb27c8f210b1ddcc29a084', 0, NULL, 0);
+    select * from account_info('0xb11b8714f35b372f73cb27c8f210b1ddcc29a084', 0, NULL, 0);
 ```
 
 
@@ -65,6 +65,11 @@ Finally, after a successful PG query, the app data is updated with the latest bl
       ( SELECT id 
         FROM transactions 
         WHERE hash = '0x167402709821f1c262890717636ad671c464a1e6edbe0418c801228737322793');
+```
+
+4. Display tables as normal hexidecimal hashes NOT bytes
+```
+    SET bytea_output = 'escape';
 ```
 
 # Auditing a block of the data
@@ -247,5 +252,4 @@ UTC_TZ_OFFSET=7
 
 # TODO's
 
-Load in sql functions on init
-
+Test the top of the stack

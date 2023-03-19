@@ -1,4 +1,5 @@
 const c = require('./common.js')
+const { log, logError } = require('../utils/log')
 
 module.exports = {
   newTopic: async (parent, account) => {
@@ -9,7 +10,7 @@ module.exports = {
         return result.rows[0].id
       }
     } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
     }
   },
 
@@ -21,7 +22,7 @@ module.exports = {
         return result.rows[0].count
       }
     } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
     }
   },
 
@@ -33,8 +34,7 @@ module.exports = {
         return result.rows
       }
     } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
     }
   }
-
 }

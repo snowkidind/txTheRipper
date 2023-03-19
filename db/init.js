@@ -1,7 +1,10 @@
 const { exec } = require('child_process')
 const fs = require('fs')
 const c = require('./common.js')
-const { log } = require('../utils/log')
+const { log, logError } = require('../utils/log')
+const { start, stop } = require('../utils/jobTimer.js')
+
+
 const appData = require('./application_data.js')
 const contractCache = require('./contract_cache.js')
 const schemaDir = process.env.BASEPATH + '/db/schema/'
@@ -47,6 +50,15 @@ module.exports = {
     }
     log('NOTICE: Tables are initialized.', 1)
     return true
+  },
+
+  initFunctions: async () => {
+    try {
+      log('Adding Accessor Functions', 1)
+      await execSqlFile(schemaDir + 'cc_functions.sql')
+    } catch (error) {
+      logError(error)
+    }
   },
 
   checkPartitions: async (block) => {
@@ -196,14 +208,58 @@ module.exports = {
     fs.writeFileSync(appDataDir + 'accountIndexes.sql', sql)
     await execSqlFile(appDataDir + 'accountIndexes.sql')
     fs.rmSync(appDataDir + 'accountIndexes.sql')
+  },
+
+  initIndexes: async (i1, i2, i3, i4, i5) => {
+
+    // The sql files are individually wrapped in transactions
+    // that way if you Ctl-C during indexing not all hope is lost.
+    // the application will keep trying until all indexes are installed
+
+    const indexDir = schemaDir + 'indexes/'
+    if (typeof i1 === 'undefined') {
+      log('Indexing: 1 of 5: topic.account', 1)
+      start('topic.account')
+      await execSqlFile(indexDir + 't_account.sql')
+      await appData.setBool('init_sync_1', true)
+      stop('topic.account', true)
+    }
+    if (typeof i2 === 'undefined') {
+      log('Indexing: 2 of 5: topic.parent', 1)
+      start('topic.parent')
+      await execSqlFile(indexDir + 't_parent.sql')
+      await appData.setBool('init_sync_2', true)
+      stop('topic.parent', true)
+    }
+    if (typeof i3 === 'undefined') {
+      log('Indexing: 3 of 5: transactions.block', 1)
+      start('transactions.block')
+      await execSqlFile(indexDir + 'tx_block.sql')
+      await appData.setBool('init_sync_3', true)
+      stop('transactions.block', true)
+    }
+    if (typeof i4 === 'undefined') {
+      log('Indexing: 4 of 5: transactions.hash', 1)
+      start('transactions.hash')
+      await execSqlFile(indexDir + 'tx_hash.sql')
+      await appData.setBool('init_sync_4', true)
+      stop('transactions.hash', true)
+    }
+    if (typeof i5 === 'undefined') {
+      log('Indexing: 5 of 5: transactions.hash', 1)
+      start('transactions.id')
+      await execSqlFile(indexDir + 'tx_id.sql')
+      await appData.setBool('init_sync_5', true)
+      stop('transactions.id', true)
+    }
   }
 }
 
 const execSqlFile = (fullPath) => {
   return new Promise((resolve) => {
     exec('psql -d ' + process.env.DB_NAME + ' -f ' + fullPath, (error, stdout, stderr) => {
-      if (error) { log(error.message) }
-      if (stderr) { log(stderr) }
+      if (error) { log(error.message, 1) }
+      if (stderr) { logError (stderr, 'Sql Error') }
       log(stdout.replace(/\n*$/, ""))
       resolve()
     })

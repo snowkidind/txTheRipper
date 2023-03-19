@@ -39,7 +39,8 @@ const mainMenu = async () => {
       await system.execCmd(cmd)
       const tmpFiles = await fs.readdirSync(baseDir)
       for (let i = 0; i < tmpFiles.length; i++) {
-        console.log('rm: ' + baseDir + tmpFiles[i])
+        if (tmpFiles[i] === 'tmp.txt') continue
+        log('rm: ' + baseDir + tmpFiles[i], 1)
         fs.rmSync(baseDir + tmpFiles[i])
       }
       log('Nuked.', 1)
@@ -60,7 +61,11 @@ const mainMenu = async () => {
   else if (query === "u") {
     const execute = await getAnswer(rl, 'Unpause Application? (y)', mainMenu)
     if (execute === 'y') {
+      await dbAppData.setBool('working', false)
       await dbAppData.markUnPaused()
+      log('Application was unpaused. Exiting.')
+      rl.close()
+      process.exit()
     }
   }
 

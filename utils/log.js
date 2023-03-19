@@ -43,7 +43,11 @@ module.exports = {
     const msg = timeFmtDb(dateNowBKK()) + ' ' + message + '\n'
     console.log(error)
     console.log(msg)
-    fs.appendFileSync(logFilePath, error.stack.toString())
+    if (error && error.stack) { 
+      fs.appendFileSync(logFilePath, error.stack.toString())
+    } else if (typeof error !== 'undefined') {
+      fs.appendFileSync(logFilePath, error.toString())
+    }
     fs.appendFileSync(logFilePath, msg + '\n')
   },
 

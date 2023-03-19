@@ -4,20 +4,26 @@ const ethers = require('ethers')
 const fs = require('fs')
 
 const { dbInit, dbAppData } = require('./db')
-const { system, events } = require('./utils')
-
+const { system, events, jobTimer } = require('./utils')
+const { start, stop } = jobTimer
 const { log, printLogo, logError } = require('./utils/log')
 
 const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_NODE, 1)
+const wsProvider = new ethers.providers.WebSocketProvider(process.env.RPC_NODE_WS)
+
 const application = require('./application/sync.js')
 const popularDir = process.env.BASEPATH + '/derived/popular/'
 
+// Set up db variables on first and only first run
 const initialInit = async () => {
   log('Initial Init. Welcome!', 1)
-  await dbAppData.setLastBlockSynced(46146) // first ever eth transaction was in 46147
+  await dbAppData.setInt('block_sync', 46146) // first ever eth transaction was in 46147
+  await dbInit.initFunctions()
   await dbAppData.setBool('init', true)
+  await dbAppData.setBool('working', false)
 }
 
+// Set up db variables during normal operations
 const init = async () => {
 
   // ensure ethers it the right version
@@ -35,6 +41,7 @@ const init = async () => {
       const procInfo = await fs.readFileSync(procDir + '/' + proc + '/status', 'utf8')
       const guts = procInfo.split('\n')
       if (guts[0].includes('node')) {
+        await logStats(source)
         log('Error: Only one process may run at a time! Pid: ' + proc + ' is still running. Exiting...', 1)
         process.exit(1)
       }
@@ -79,24 +86,42 @@ const interactiveMode = async () => {
   require('./application/cli')
 }
 
+const logStats = async (source) => {
+  log(source + ' has finished', 1)
+  system.memStats(true, 'Final System Memory Usage')
+  stop('Main Application', true)
+  log('NOTICE: Exit was clean. Marking Unpaused', 2)
+}
+
+let onlyOnce = false
 const cleanup = async (errorCode) => {
-  return new Promise (async (resolve) => {
-    events.emitter.on('close', async (source) => {
-      log(source + ' has finished', 1)
-      log('NOTICE: Exiting', 4, system.memStats(false))
-      log('NOTICE: Marking Unpaused', 2)
+  if (onlyOnce === true) return
+  onlyOnce = true
+  await dbAppData.markPaused()
+  // Weve been told to quit but marking unpaused first
+  const working = await dbAppData.getBool('working')
+  if (working === true) {
+    const source = await events.asyncListener('exit')
+    if (source === 'finalize') {
+      await logStats(source)
       await dbAppData.markUnPaused()
       process.exit(errorCode)
-    })
-    await dbAppData.markPaused()
-  })
+    } else {
+      log('ERROR: Couldn\'t determine source of exit cmd', 4)
+      process.exit(1)
+    }
+  } else {
+    await logStats('local')
+    await dbAppData.markUnPaused()
+    process.exit(errorCode)
+  }
 }
 
 
 ;(async () => {
   try {
+    start('Main Application')
     printLogo()
-
     process.on('SIGHUP', async () => {
       log('NOTICE: >>>>>>> SIGHUP acknowledged <<<<<< Will Exit at end of this cycle.', 1)
       await cleanup(0)
@@ -109,7 +134,6 @@ const cleanup = async (errorCode) => {
       log('NOTICE: >>>>>>> SIGTERM acknowledged <<<<<< Will Exit at end of this cycle.', 1)
       await cleanup(0)
     })
-
     let found = false
     for (let i = 2; i < process.argv.length; i++) {
       if (process.argv[i] === 'cli' || process.argv[i] === 'i') {
@@ -117,13 +141,57 @@ const cleanup = async (errorCode) => {
       }
     }
     await init()
+    log('NOTICE: Waiting for a block...', 1)
+    const pause = await dbAppData.pauseStatus()
+    if (pause) {
+      log('NOTICE: >>>>>>> Pause flag detected <<<<<< Entering interactive mode.', 1)
+      found = true
+    }
+    events.emitter.on('close', async (source) => {
+      if (source === 'sync_complete') {
+        logStats(source)
+        // log('NOTICE: ' + source + ' has finished, exiting', 4, system.memStats(false))
+        await dbAppData.markUnPaused()
+        console.log('D')
+        process.exit(0)
+      } else if (source === 'ws_error') {
+        logError()
+        logStats(source)
+        // log('NOTICE: ' + source + ' has finished, exiting', 4, system.memStats(false))
+        await dbAppData.markUnPaused()
+        console.log('C')
+        process.exit(0)
+      }
+    })
     if (found) {
       await interactiveMode()
     } else {
-      await application.synchronize()
-    }
-    
-    if (!found) cleanup()
+      let dont = false
+      wsProvider.on("block", async (block) => {
+        const lastSyncPoint = await dbAppData.getInt('block_sync')
+        const diff = block - lastSyncPoint
+        log('New Block:' + block + ' behind by: ' + diff + 'blocks', 1)
+        const working = await dbAppData.getBool('working')
+        if (working === false && dont === false) {
+          const response = await application.synchronize(block)
+          if (response === 'exit') {
+            dont = true
+            events.emitMessage('close', 'sync_complete')
+          }
+        }
+      })
+      wsProvider._websocket.on("error", async (error) => {
+        logError(error)
+        log('NOTICE: >>>>>>> WEBSOCKET ERROR <<<<<<', 1)
+        await cleanup(1)
+      })
+      wsProvider._websocket.on("close", async (error) => {
+        logError(error)
+        log('NOTICE: >>>>>>> WEBSOCKET ERROR <<<<<<', 1)
+        await cleanup(1)
+      })
+    } 
+    // if (!found) await cleanup(0)
   } catch (error) {
     logError(error, 'Application Error')
     await cleanup(1)

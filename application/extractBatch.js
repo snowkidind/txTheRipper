@@ -25,6 +25,7 @@ const addTransaction2Q = (block, timestamp, hash, topics) => {
 }
 
 const commit = async (syncFile, block) => {
+  await dbAppData.setInt('last_block_scanned', block)
   if (txQueue.length === 0) return
   log('Commit: ' + txQueue.length + ' entries. Block: ' + block, 1)
   const dbRaw = await fs.readFileSync(syncFile)
@@ -66,12 +67,12 @@ module.exports = {
 
   extractBatch: async (blockHeight, lastSyncPoint) => {
 
-    txQueue = []
     try {
-
+      txQueue = []
       const tmpFiles = await fs.readdirSync(baseDir) // get rid of any residual junk.
       for (let i = 0; i < tmpFiles.length; i++) {
-        console.log('rm: ' + baseDir + tmpFiles[i])
+        if (tmpFiles[i] === 'tmp.txt') continue
+        log('rm: ' + baseDir + tmpFiles[i], 4)
         fs.rmSync(baseDir + tmpFiles[i])
       }
 
@@ -83,8 +84,9 @@ module.exports = {
       const startBlock = lastSyncPoint + 1
       let blocksProcessed = 0
       const theTop = blockHeight - confirmations
+      let lastBlockProcessed
       for (let block = startBlock; block <= theTop; block++) {
-
+        lastBlockProcessed = block
         const txInfo = await module.exports.processBlock(block)
         if (txInfo.txCount > 0) {
           for (hash in txInfo.transactions) {
@@ -109,7 +111,7 @@ module.exports = {
         }
       }
       // If you passed this it means the project is inSync
-      await commit(syncFile, block)
+      if (typeof lastBlockProcessed !== 'undefined') await commit(syncFile, lastBlockProcessed)
       stop('Extract Transactions', true)
       return jobId
     } catch (error) {

@@ -81,7 +81,7 @@ const auditBlock = async (blockHeight) => {
 
   try {
 
-    let highBlock = await dbAppData.getLastBlockSynced()
+    let highBlock = await dbAppData.getInt('block_sync')
     log('Application is synced to block height: ' + highBlock, 1)
     if (process.argv.length > 2) {
       if (process.argv[2] < highBlock) {

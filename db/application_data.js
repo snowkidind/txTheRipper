@@ -1,4 +1,5 @@
 const c = require('./common.js')
+const { log, logError } = require('../utils/log')
 
 module.exports = {
 
@@ -8,7 +9,7 @@ module.exports = {
       const result = await c.query(q1, [field])
       if (result.rows.length > 0) return result.rows[0].value_bool
     } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
     }
   },
 
@@ -27,7 +28,7 @@ module.exports = {
       const result2 = await c.query(q1, [field])
       return result2.rows[0].value_bool
     } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
     }
   },
 
@@ -37,7 +38,7 @@ module.exports = {
       const result = await c.query(q1, [field])
       if (result.rows.length > 0) return result.rows[0].value_int
     } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
     }
   },
 
@@ -55,7 +56,7 @@ module.exports = {
       const result2 = await c.query(q1, [field])
       return result2.rows[0].value_int
     } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
     }
   },
 
@@ -73,7 +74,7 @@ module.exports = {
       const result2 = await c.query(q1)
       return { newStatus: result2.rows[0].value_bool } 
     } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
     }
   },
 
@@ -91,50 +92,18 @@ module.exports = {
       const result2 = await c.query(q1)
       return { newStatus: result2.rows[0].value_bool }
     } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
     }
   },
 
   pauseStatus: async () => {
+
     try {
       const q1 = 'SELECT value_bool FROM application_data WHERE field = \'pause\''
       const result = await c.query(q1)
       if (result.rows.length > 0) return result.rows[0].value_bool
     } catch (error) {
-      console.log(error)
-    }
-  },
-
-  setLastBlockSynced: async (lastBlock) => {
-    try {
-      const q1 = 'SELECT value_int FROM application_data WHERE field = \'block_sync\''
-      const result1 = await c.query(q1)
-      if (result1.rows.length === 0) {
-        const q2 = 'INSERT INTO application_data ("field", "value_int") VALUES (\'block_sync\', $1)'
-        await c.query(q2, [lastBlock])
-      } else {
-        const q3 = 'UPDATE application_data SET "value_int" = $1 WHERE field = \'block_sync\''
-        await c.query(q3, [lastBlock])
-      }
-      const result2 = await c.query(q1)
-      return { newStatus: result2.rows[0].value_int }
-    } catch (error) {
-      console.log(error)
-    }
-  },
-
-  getLastBlockSynced: async () => {
-    try {
-      const q1 = 'SELECT value_int FROM application_data WHERE field = \'block_sync\''
-      let result = await c.query(q1)
-      if (result.rows.length === 0) {
-        const q2 = 'INSERT INTO application_data (value_int, field) VALUES (0, \'block_sync\')'
-        const result2 = await c.query(q2)
-        result = await c.query(q1)
-      }
-      return result.rows[0].value_int
-    } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
     }
   },
 
@@ -144,7 +113,7 @@ module.exports = {
       const result = await c.query(q, [table])
       return result.rows[0].value_int
     } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
     }
   },
 
@@ -162,7 +131,7 @@ module.exports = {
       const result2 = await c.query(q1)
       return { newStatus: result2.rows[0].value_int }
     } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
     }
   },
 
@@ -172,7 +141,7 @@ module.exports = {
       const result = await c.query(q)
       if (result.rows.length > 0) return result.rows[0].value_int
     } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
     }
   },
 
@@ -190,7 +159,7 @@ module.exports = {
       const result2 = await c.query(q1)
       return { newStatus: result2.rows[0].value_int }
     } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
     }
   },
 }

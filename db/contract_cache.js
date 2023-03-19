@@ -1,4 +1,5 @@
 const c = require('./common.js')
+const { log, logError } = require('../utils/log')
 
 module.exports = {
   cacheSize: async (parent, account) => {
@@ -7,7 +8,7 @@ module.exports = {
       const result = await c.query(q)
       return result.rows[0].count
     } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
     }
   },
 
@@ -26,10 +27,10 @@ module.exports = {
     try {
       const q = 'SELECT encode(account, \'escape\') AS account FROM contract_cache WHERE "byteId" = $1'
       const result = await c.query(q, [short])
-      if (result.rows.length > 1) console.log('WARNING: Found more than one account for short code:' + short)
+      if (result.rows.length > 1) log('WARNING: Found more than one account for short code:' + short, 1)
       return result.rows[0]
     } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
     }
   }
 }

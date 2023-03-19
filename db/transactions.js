@@ -1,4 +1,5 @@
 const c = require('./common.js')
+const { log, logError } = require('../utils/log')
 
 module.exports = {
   newTransaction: async (block, timestamp, hash) => {
@@ -9,7 +10,7 @@ module.exports = {
         return result.rows[0].id
       }
     } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
     }
   },
 

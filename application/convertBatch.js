@@ -13,7 +13,6 @@ module.exports = {
     if (pause) {
       log('NOTICE: >>>>>>> Pause flag detected <<<<<< Will Exit at end of this cycle.', 1)
     }
-
     const batchJsonFile = baseDir + jobId + '.json'
     log('NOTICE: Converting batch to addressCache', 1)
     start('Convert Batch')
@@ -51,6 +50,9 @@ const percent = (size, i) => {
 }
 
 const stringify = (obj) => {
+  if (obj.length === 0) {
+    return JSON.stringify(obj) 
+  }
   let acc = '[\n'
   obj.forEach((obj) => { acc += '  ' + JSON.stringify(obj) + ',\n' })
   acc = acc.slice(0, acc.length - 2)

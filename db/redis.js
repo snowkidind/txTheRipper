@@ -1,4 +1,6 @@
 const _redis = require('redis')
+const { log, logError } = require('../utils/log')
+
 let client
 
 const connect = async () => {
@@ -8,13 +10,13 @@ const connect = async () => {
         url: process.env.REDIS_URL
       })
       client.on('error', (err) => {
-        console.log(err)
+        logError(err, 'Database Error')
         console.error("Redis is ded");
       })
       await client.connect()
     }
   } catch (error) {
-    console.log(error)
+    logError(error, 'Database Error')
     return null
   }
 }
@@ -29,7 +31,7 @@ module.exports = {
       const data = await client.get(key)
       return data
     } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
     }
   },
 
@@ -43,7 +45,7 @@ module.exports = {
         await client.expire(key, parseInt(expiry))
       }
     } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
     }
   },
 
@@ -55,7 +57,7 @@ module.exports = {
       }
       await client.del(key)
     } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
     }
   },
 
@@ -67,7 +69,7 @@ module.exports = {
       const keys = await client.keys(expression)
       return keys
     } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
     }
   },
 
@@ -91,7 +93,7 @@ module.exports = {
       const keys = await client.BGSAVE()
       return keys
     } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
     }
   },
 }

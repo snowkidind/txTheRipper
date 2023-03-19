@@ -7,18 +7,25 @@ const { log, logError } = require('../utils/log')
 
 const baseDir = process.env.BASEPATH + 'derived/tmp/'
 
+const parseDbToDisplay = (string) => {
+  const lines = string.split('\n')
+  lines.forEach((l) => {
+    log(l, 1)
+  })
+}
+
 const addDb = (fileToRead) => {
   return new Promise((resolve, reject) => {
     exec('psql -d ' + process.env.DB_NAME + ' -f ' + fileToRead, (error, stdout, stderr) => {
       if (error) {
-        logError(error.message)
+        logError(error.message, 1)
         reject()
       }
       if (stderr) {
-        logError(stderr)
+        logError(stderr, 1)
         reject()
       }
-      log(stdout.replace(/\n*$/, ""), 2)
+      parseDbToDisplay(stdout)
       resolve()
     })
   })
@@ -49,6 +56,9 @@ module.exports = {
     start('Import To PG')
     const _json = fs.readFileSync(batchJsonFile)
     const json = JSON.parse(_json)
+    if (json.length === 0) {
+      return true
+    }
     
     let f1 = 'INSERT INTO transactions ("id", "block", "timestamp", "hash") VALUES \n'
     let f2 = 'INSERT INTO topic ("parent", "account") VALUES \n'
@@ -61,7 +71,7 @@ module.exports = {
       id += 1
     }
     const sqlFile = batchJsonFile.replace('.json', '.sql')
-    console.log('writing to file: ' + sqlFile)
+    log('writing to file: ' + sqlFile, 2)
 
     const insertId = id + 1
 
@@ -80,9 +90,9 @@ module.exports = {
     } catch (error) {
 
       // This will stop you at the last good inserted file and exit if the db had an issue with current one.
-      console.log(error)
-      console.log('Notice: Couldn\'t insert file into database. exiting.')
-      console.log('The problem was at file: ' + jobId)
+      logError(error)
+      log('Notice: Couldn\'t insert file into database. exiting.', 1)
+      log('The problem was at file: ' + jobId, 1)
       return false
     }
   }

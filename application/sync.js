@@ -10,24 +10,55 @@ const { updateAppData } = require('./finalizeBatch.js')
 
 const { dbAppData, dbInit } = require('../db')
 const confirmations = Number(process.env.CONFIRMATIONS) || 20
+let x = 0
+
+const initialSyncInit = async () => {
+  if (process.env.DONT_INDEX === 'true') return
+  if (process.env.INDEX_SYNC === true) return
+  const inited1 = await dbAppData.getBool('init_sync_1')
+  const inited2 = await dbAppData.getBool('init_sync_2')
+  const inited3 = await dbAppData.getBool('init_sync_3')
+  const inited4 = await dbAppData.getBool('init_sync_4')
+  const inited5 = await dbAppData.getBool('init_sync_5')
+  if (inited1 === true && inited2 === true && inited3 === true && inited4 === true && inited5 === true) {
+    process.env.INDEX_SYNC = true
+    return
+  }
+  log('Initial Sync Init. \n\nNOTICE: Adding Indexes. This could take a while, like 4 to 8 hours. Once its finished the db will be ready.\n', 1)
+  await dbInit.initIndexes(inited1, inited2, inited3, inited4, inited5)
+}
+
+const cleanupSync = async () => {
+  await dbAppData.setBool('working', false)
+  stop('synchronize', true)
+}
 
 module.exports = {
 
-  synchronize: async () => {
-
-    start('Synchronize - The whole round.')
+  synchronize: async (blockHeight) => {
+    const inJob = await dbAppData.getBool('working')
+    if (inJob === true) {
+      return 'ok'
+    }
     
-    log('NOTICE: Beginning synchronization process.', 1)
+    await dbAppData.setBool('working', true)
     if (await dbAppData.pauseStatus() === true) {
       log('WARNING: Application is paused, exiting safely', 1)
-      
-      return
+      await cleanupSync()
+      return 'exit'
     }
-    const blockHeight = await provider.getBlockNumber()
-    const lastSyncPoint = await dbAppData.getLastBlockSynced()
-    if (blockHeight - lastSyncPoint < confirmations) {
+
+    start('synchronize')
+    log('NOTICE: Beginning synchronization process.', 1)
+    const lastSyncPoint = await dbAppData.getInt('block_sync') // was set to 99981
+    const ls = lastSyncPoint // The block we are looking for is one greater than the last block synced
+    const bh = blockHeight - confirmations
+    if (0 >= bh - ls) {
       log('NOTICE: Database is in sync: nodeHeight: ' + blockHeight + ' last sync point: ' +  lastSyncPoint, 1)
-      return
+      await initialSyncInit()
+      await cleanupSync()
+      // events.emitMessage('close', 'sync_complete')
+      return 'ok'
     }
     
     await dbInit.checkPartitions()
@@ -71,9 +102,13 @@ module.exports = {
       information and the process is restarted from the top.
     */
     await updateAppData(success, jobId)
-
-    stop('Synchronize - The whole round.')
-
-    await module.exports.synchronize()
+    await cleanupSync() // sets working to false
+    const pause = await dbAppData.pauseStatus()
+    if (pause) {
+      log('NOTICE: >>>>>>> Pause flag detected <<<<<< Exiting.', 1)
+      return 'exit'
+    } else {
+      return 'ok'
+    }
   }
 }

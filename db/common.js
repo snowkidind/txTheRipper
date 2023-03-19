@@ -1,7 +1,8 @@
-const { Pool, types } = require('pg');
+const { Pool, types } = require('pg')
 types.setTypeParser(1114, function (stringValue) {
-  return stringValue;
-});
+  return stringValue
+})
+const { log, logError } = require('../utils/log')
 
 let pool
 let dispRaiseNotice = false
@@ -32,7 +33,7 @@ module.exports = {
         }
       }
     } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
       throw "There was an error in common.js"
     }
   },
@@ -80,7 +81,7 @@ module.exports = {
       const result = await module.exports.query(q)
       return result.rows
     } catch (error) {
-      console.log(error)
+      logError(error, 'Database Error')
     }
   },
 
@@ -100,8 +101,8 @@ function initPool() {
   });
   pool = _pool
   _pool.on('error', (error, client) => {
-    console.log('Common.js - Unexpected database error:')
-    console.log(error)
+    log('Common.js - Unexpected database error:', 1)
+    logError(error, 'Database Error')
     // process.exit(-1)
   })
 }
@@ -113,20 +114,14 @@ function callbacks(client) {
   // doesnt seem to care as much about the non error listeners.
 
   client.on('error', (error) => {
-    console.log('An error occurred with db client:')
-    console.log(error)
+    log('An error occurred with db client:', 1)
+    logError(error, 'Database Error')
   })
 
   // for debugging - observe the handle ending
   client.on('end', (end) => {
-    console.log('pg_client: end')
+    log('pg_client: end', 1)
   })
-
-  // log debug notices from sql functions
-  // client.on('notice', (notice) => {
-  //   console.log('A notice from postgres:')
-  //   console.log(notice.message)
-  // })
 
   return client
 }

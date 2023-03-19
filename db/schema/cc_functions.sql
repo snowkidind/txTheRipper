@@ -24,7 +24,7 @@ CREATE TYPE account_info_t AS (
     account    text
 );
 
-CREATE OR REPLACE FUNCTION accountInfo(
+CREATE OR REPLACE FUNCTION account_info(
   "Account"   varchar, 
   "FromBlock" integer,
   "Limit"     integer,
