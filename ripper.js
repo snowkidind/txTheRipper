@@ -2,14 +2,15 @@ const env = require('node-env-file')
 env(__dirname + '/.env')
 const ethers = require('ethers')
 const fs = require('fs')
+const WebSocket = require('ws')
 
 const { dbInit, dbAppData } = require('./db')
 const { system, events, jobTimer } = require('./utils')
-const { start, stop } = jobTimer
+const { start, stop, getId } = jobTimer
 const { log, printLogo, logError } = require('./utils/log')
 
 const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_NODE, 1)
-const wsProvider = new ethers.providers.WebSocketProvider(process.env.RPC_NODE_WS)
+let wsProvider
 
 const application = require('./application/sync.js')
 const popularDir = process.env.BASEPATH + '/derived/popular/'
@@ -81,6 +82,8 @@ const init = async () => {
   await dbInit.assignPopularAddresses() // establish the contract cache
 }
 
+const sleep = (m) => { return new Promise(r => setTimeout(r, m)) }
+
 const interactiveMode = async () => {
   log('NOTICE: Entering Interactive Mode', 1)
   require('./application/cli')
@@ -117,6 +120,50 @@ const cleanup = async (errorCode) => {
   }
 }
 
+const doSynchronize = async (block) => {
+  let dont = false
+  const lastSyncPoint = await dbAppData.getInt('block_sync')
+  const diff = block - lastSyncPoint
+  log('New Block:' + block + ' behind by: ' + diff + ' blocks', 1)
+  const working = await dbAppData.getBool('working')
+  if (working === false && dont === false) {
+    const response = await application.synchronize(block)
+    if (response === 'exit') {
+      dont = true
+      events.emitMessage('close', 'sync_complete')
+    } else if (response === 'error') {
+      logError('An Error occurred during this cycle. Will retry from last sync point.', 1)
+    }
+  }
+}
+
+const setUpWsProviderAndGo = async () => {
+  if (wsProvider && wsProvider._websocket && 
+    (wsProvider._websocket._readyState === WebSocket.OPEN || 
+    wsProvider._websocket._readyState === WebSocket.CONNECTING)) {
+    log('WebSocket already in use: ' + wsProvider._websocket._readyState, 1)
+    return
+  }
+  wsProvider = new ethers.providers.WebSocketProvider(process.env.RPC_NODE_WS)
+  const id = getId()
+  wsProvider['ripperId'] = id
+  log('NOTICE: Opening New WS Provider with id: ' + id)
+  wsProvider.on("block", async (block) => {
+    await doSynchronize(block)
+  })
+  const timeoutDuration = Number(process.env.WS_RECONNECT_TIMEOUT) * 1000 || 5000
+  wsProvider._websocket.on("error", async (error) => {
+    logError(error)
+  })
+  wsProvider._websocket.on("close", async (error) => {
+    log('Websocket with id: ' + wsProvider.ripperId + ' was closed.')
+    logError(error)
+    log('NOTICE: >>>>>>> WEBSOCKET CLOSED <<<<<<', 1)
+    setTimeout(async () => {
+      await setUpWsProviderAndGo()
+    }, timeoutDuration)
+  })
+} 
 
 ;(async () => {
   try {
@@ -166,30 +213,7 @@ const cleanup = async (errorCode) => {
     if (found) {
       await interactiveMode()
     } else {
-      let dont = false
-      wsProvider.on("block", async (block) => {
-        const lastSyncPoint = await dbAppData.getInt('block_sync')
-        const diff = block - lastSyncPoint
-        log('New Block:' + block + ' behind by: ' + diff + ' blocks', 1)
-        const working = await dbAppData.getBool('working')
-        if (working === false && dont === false) {
-          const response = await application.synchronize(block)
-          if (response === 'exit') {
-            dont = true
-            events.emitMessage('close', 'sync_complete')
-          }
-        }
-      })
-      wsProvider._websocket.on("error", async (error) => {
-        logError(error)
-        log('NOTICE: >>>>>>> WEBSOCKET ERROR <<<<<<', 1)
-        await cleanup(1)
-      })
-      wsProvider._websocket.on("close", async (error) => {
-        logError(error)
-        log('NOTICE: >>>>>>> WEBSOCKET ERROR <<<<<<', 1)
-        await cleanup(1)
-      })
+      await setUpWsProviderAndGo()
     } 
     // if (!found) await cleanup(0)
   } catch (error) {

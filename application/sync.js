@@ -78,6 +78,11 @@ module.exports = {
     */
 
     const jobId = await extractBatch(blockHeight, lastSyncPoint)
+    if (typeof jobId === 'undefined') {
+      // the app crashed or had some issue
+      await cleanupSync()
+      return 'error'
+    }
 
     /* 
       In order to save a lot of disk space and read writes, popular accounts are collected 
@@ -96,12 +101,16 @@ module.exports = {
       to run (on a separate thread) This utilizes multi cores.
     */
     const success = await importTransactionsToPg(jobId)
-
+    if (success === false) {
+      await cleanupSync()
+      return 'error'
+    }
+    
     /* 
       Finally, after a successful PG query, the app data is updated with the latest block 
       information and the process is restarted from the top.
     */
-    await updateAppData(success, jobId)
+    await updateAppData(success, jobId) // update the last block scanned
     await cleanupSync() // sets working to false
     const pause = await dbAppData.pauseStatus()
     if (pause) {
