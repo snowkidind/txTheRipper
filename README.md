@@ -6,7 +6,7 @@ The way the indexer is structured, it also retrieves accounts from delegate call
 
 It does not calculate state differences, and expects you to have an accessible archive node at the ready to further parse database results.
 
-here is an example where an account of interested is provided and all of the transactions related to that account are returned:
+here is an example where an account of interest is provided and all of the transactions related to that account are returned:
 
 ```
 
@@ -32,7 +32,7 @@ The first step in the process is to extract the transactions from the archive no
 
 Each iteration of this gets its own ID and all files related are isolated. Unless the entire import process of this range completes, the indexer will pick up from the same spot. This gives a level of idempotence for the application. As long as the application isnt running, it is safe to remove files from /derived/tmp
 
-To stop the script a simple Ctl-C is detected and is unwinds gracefully. It may take a little bit depending on how much information is currently being processed.
+To stop the script a simple Ctl-C is detected and it unwinds gracefully. It may take a little bit depending on how much information is currently being processed.
 
 In order to save a lot of disk space and read writes, popular accounts are collected and then stored in a table and then assigned a numeric replacement for their account. The numeric account ID is then stored in the DB. This causes a dependency on lookup tables but it extends the life of SSD's and NVMe's (see Account Indexed Cache section below for details)
 
@@ -45,7 +45,9 @@ Finally, after a successful PG query, the app data is updated with the latest bl
 1. Get all transaction info related to an address in a formatted table
 
 ```
-    select * from account_info('0xb11b8714f35b372f73cb27c8f210b1ddcc29a084', 0, NULL, 0);
+    Function account_info(Account, FromBlock, Limit, Offset)
+
+    SELECT * FROM account_info('0xb11b8714f35b372f73cb27c8f210b1ddcc29a084', 0, NULL, 0);
 ```
 
 
@@ -76,8 +78,7 @@ Finally, after a successful PG query, the app data is updated with the latest bl
 
   `node extras/audit.js 3452553`
 
-  The auditor picks the head block if no specific block is specified at the command line
-  this test picks up the database information and then compares it with fresh data pulled from the node.
+  The auditor picks the head block if no specific block is argued at the command line. This test picks up the database information and then compares it with fresh data pulled from the node.
 
 # Account Indexed Cache
 
@@ -104,27 +105,22 @@ Results:
 node extras/popularContracts.js
 ```
 
-the intention of this script is to poll sections of the blockchain in order to discover 
-  perpetually busy addresses. It takes 40 samplings of 240 consecutive blocks at intervals
-  of 425000 blocks. The resultant set of addresses is then ranked and stored in a json file. 
+Part of the initialization process utilizes this script. Its intention is to poll sections of the blockchain in order to discover perpetually busy addresses. It takes 40 samplings of 240 consecutive blocks at intervals of 425000 blocks. The resultant set of addresses is then ranked and stored in a json file, then imported into SQL. 
 
-  Upon running it took 13.9 minutes to execute at a block height of 16700000
+  Upon running this section took 13.9 minutes to execute at a block height of 16700000
 
 # Etherscan Scraper for account names
 
 ```
 node extras/popularLookup.js
 ```
-  Above we generated a list of popular addresses, but it's anonymous and there is value in identifying them so this scraper was included to do as much. It only displays the data. All the results are cached in order to avoid redundant calls / burden on Etherscan.
+  Above we generated a list of popular addresses, but it's anonymous and there is value in identifying them so this scraper was included to do as much. There are no associated database functions, it only displays the data it finds to the console. All the results are cached in order to avoid redundant calls / burden on Etherscan.
 
-  Iterating the file made previously, it tests to see if it is a contract and attempts
-  to get a symbol. Upon failure of that it attempts to pull a contracts abi off of etherscan
-  to get contract info. Upon EOA or Any failure, it filally scrapes the title tag from the etherscan page.
+  Iterating the file made previously, it tests to see if it is a contract and attempts to get a symbol. Upon failure of that it attempts to pull a contracts abi off of etherscan to get contract info. Upon EOA or Any failure, it filally scrapes the title tag from the etherscan page.
 
-  There are several things in place to remove redundant requests to etherscan but also since 
-  this scrapes info from etherscan for which there is no endpoint it is better to do it slow
+  There are several things in place to remove redundant requests to etherscan but also since this scrapes info from etherscan for which there is no endpoint it is better to do it slow.
 
-  Redundant runs of the script begin where it left off and the full scrapes and abi's are 
+  Redundant runs of the script begin scraping where it left off and the full scrapes and abi's are 
   saved for future use.
 
   About Sources as displayed during execution:
