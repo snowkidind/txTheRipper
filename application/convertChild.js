@@ -27,7 +27,7 @@ let _jobId = filePath.split('_')
 let jobId = _jobId[_jobId.length -1].replace('.json', '')
 
 ; (async () => {
-  log('child:accountCache jobId: ' + jobId + ' starting with pId: ' + process.pid, 1)
+  // log('child:accountCache jobId: ' + jobId + ' starting with pId: ' + process.pid, 1)
   const key = 'ripper:contractCache'
   let addressCache
   const cc = await redis.get(key)
@@ -50,7 +50,7 @@ let jobId = _jobId[_jobId.length -1].replace('.json', '')
         }
       }
     }
-    if (i % 2500 === 0) log('child: ' + jobId + ' accountCache: ' + percent(addressCache.length, i) + '% ', 1)
+    // if (i % 2500 === 0) log('child: ' + jobId + ' accountCache: ' + percent(addressCache.length, i) + '% ', 1)
   }
   fs.writeFileSync(filePath, JSON.stringify(json))
   log('child:accountCache ' + jobId + ' completed successfully.', 1)
