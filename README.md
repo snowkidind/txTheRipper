@@ -1,18 +1,20 @@
 # TxRipper - the Ethereum Transaction Indexer
 
-TxRipper will index the accounts and transactions in the database to allow for looking up some basic things.
+txRipper runs alongside your archive node by connecting to its rpc servers websocket to listen for new blocks. When a block is found, it then runs an import program which scans and adds some data for any new transactions. The primary feature of this is looking up transaction history by account. There are some hardware considerations as well as additional storage requirements. 
 
-The way the indexer is structured, it also retrieves accounts from delegate calls and input data, so when you compare the results to the "pretty" results of etherscan, you can see all of the accounts that are involved with a transaction.
+# Database
 
-It does not calculate state differences, and expects you to have an accessible archive node at the ready to further parse database results.
+The data is imported to two postgresql tables: "transactions" contains the hash, the blockHeight and timestamp. For each transaction received, any addresses associated with from, to, "input data" as well as all types of calls, including delegate calls are added as rows in the "topic" table, along with a parent id from the transactions table.
 
-here is an example where an account of interest is provided and all of the transactions related to that account are returned:
+Sql functions as well as indexes are installed during operation to allow easy access to the data. 
+
+1. Get all transaction info related to an address in a formatted table
 
 ```
+Function account_info(Account, FromBlock, Limit, Offset)
+Returns: id, block, timestamp, hash(text), account(text)
 
-account_info(Account, FromBlock, Limit, Offset)
-
-select * from account_info('0xb11b8714f35b372f73cb27c8f210b1ddcc29a084', 0, NULL, 0);
+    SELECT * FROM account_info('0xb11b8714f35b372f73cb27c8f210b1ddcc29a084', 0, NULL, 0);
 
 Results: 
 
@@ -26,32 +28,7 @@ syncPoint was 3452553 for this request
 
 ```
 
-# The Process of indexing
-
-The first step in the process is to extract the transactions from the archive node. Here, Blocks are sequentially read and traced. The trace data is then used to collect any possible addresses related to the transaction, this includes all types of calls, including delegate calls, as well as extracting input data from the transaction and harvesting accounts from it.
-
-Each iteration of this gets its own ID and all files related are isolated. Unless the entire import process of this range completes, the indexer will pick up from the same spot. This gives a level of idempotence for the application. As long as the application isnt running, it is safe to remove files from /derived/tmp
-
-To stop the script a simple Ctl-C is detected and it unwinds gracefully. It may take a little bit depending on how much information is currently being processed.
-
-In order to save a lot of disk space and read writes, popular accounts are collected and then stored in a table and then assigned a numeric replacement for their account. The numeric account ID is then stored in the DB. This causes a dependency on lookup tables but it extends the life of SSD's and NVMe's (see Account Indexed Cache section below for details)
-
-Once the JSON files have been processed, then the script generates a sql file for postgres to run (on a separate thread) This utilizes a separate process to run the db query.
-
-Finally, after a successful PG query, the app data is updated with the latest block information and the whole process is restarted from the top.
-
-# Featured Queries:
-
-1. Get all transaction info related to an address in a formatted table
-
-```
-    Function account_info(Account, FromBlock, Limit, Offset)
-
-    SELECT * FROM account_info('0xb11b8714f35b372f73cb27c8f210b1ddcc29a084', 0, NULL, 0);
-```
-
-
-2. Retrieve transaction block and timestamp
+2. Retrieve transaction block and timestamp. The id field can be used to search for related accounts in the topic table.
 
 ```
     SELECT id, block, timestamp 
@@ -59,37 +36,11 @@ Finally, after a successful PG query, the app data is updated with the latest bl
     WHERE hash = '0x167402709821f1c262890717636ad671c464a1e6edbe0418c801228737322793'
 ```
 
-3. Retrieve accounts associated with transaction 
+3. Translate BYTEA to legible ethereum address
 
 ```
-    SELECT id, parent, encode(account, 'escape') as account FROM topic 
-    WHERE parent = 
-      ( SELECT id 
-        FROM transactions 
-        WHERE hash = '0x167402709821f1c262890717636ad671c464a1e6edbe0418c801228737322793');
-```
-
-4. Display tables as normal hexidecimal hashes NOT bytes
-```
-    SET bytea_output = 'escape';
-```
-
-# Auditing a block of the data
-
-  `node extras/audit.js 3452553`
-
-  The auditor picks the head block if no specific block is argued at the command line. This test picks up the database information and then compares it with fresh data pulled from the node.
-
-# Account Indexed Cache
-
-txRipper uses an index cache to record accounts that appear millions of times in the database, having a notable impact on account size. Think USDT, Uniswap Pools, Binance EOA's. These busy Ids are stored in binary (thats BYTEA in PG). 
-
-In order to do this a pre scan occurs that takes a one hour long sampling of blocks every 450k blocks and accumulates these addresses by rank. Addresses that occur frequently are then converted to an integer index and the original stored in a separate table, thereby reducing the db size (and read/writes) significantly.
-
-In order to make querying the database easier, a translate() function has been included, which serves as a easy way to implement encode(x, 'escape') when the results are mixed in with other regular data:
-
-```
-Function translate(account), use where value is stored as "bytea"
+Function translate(ByteId)
+Returns varchar
 
 select translate(account) as account from topic where id = 31438885;
 
@@ -99,17 +50,66 @@ Results:
  0xd34da389374caad1a048fbdc4569aae33fd5a375
 ```
 
-# Identifying top accounts to Index
+4. Retrieve accounts associated with transaction. Note because of the indexed cache feature, you must translate() the account column. 
+
+```
+
+
+    SELECT id, parent, translate(account) as account FROM topic 
+    WHERE parent = 
+      ( SELECT id 
+        FROM transactions 
+        WHERE hash = '0x167402709821f1c262890717636ad671c464a1e6edbe0418c801228737322793');
+```
+
+5. For raw requests, you can display tables as normal hexidecimal hashes NOT bytes during your session like this.
+```
+    SET bytea_output = 'escape';
+```
+
+To stop the script a simple Ctl-C is detected and it unwinds gracefully. It may take a little bit depending on how much information is currently being processed.
+
+# The process of indexing
+
+Each iteration of this gets its own ID and all files related are isolated. Unless the entire import process of this range completes, the indexer will pick up from the same spot. This gives a level of idempotence for the application. As long as the application isnt running, it is safe to remove files from /derived/tmp
+
+The application will connect to your node's websocket and listen for new blocks. When a new block is found, the following cycle will be completed:
+
+1. Extraction. The first step in the process is to extract the transactions from the archive node. Here, Blocks are sequentially read and traced. The trace data is then used to collect any possible addresses related to the transaction, this includes all types of calls, including delegate calls, as well as extracting input data from the transaction and harvesting accounts from it.
+
+2. Indexed cacheing. In order to save a lot of disk space and read writes, popular accounts are collected and then stored in a table and then assigned a numeric replacement for their account. The numeric account ID is then stored in the DB. This causes a dependency on lookup tables but it extends the life of SSD's and NVMe's (see Account Indexed Cache section below for details)
+
+3. Insertion. Once the JSON files have been processed, then the script generates a sql file for postgres to run (on a separate thread) This utilizes a separate process to run the db query.
+
+4. Finalizing. After a successful PG query, the app data is updated with the latest block information, temporary files are cleared, and the whole process is restarted from the top.
+
+
+# Account indexed cache
+
+txRipper uses an index cache to record accounts that appear millions of times in the database, having a notable impact on account size. Think USDT, Uniswap Pools, Binance EOA's. These busy Ids are stored in binary (thats BYTEA in PG). 
+
+In order to do this a pre scan occurs that takes a one hour long sampling of blocks every 450k blocks and accumulates these addresses by rank. Addresses that occur frequently are then converted to an integer index and the original stored in a separate table, thereby reducing the db size (and read/writes) significantly.
+
+
+# Auditing a block of the data
+
+  `node extras/audit.js 3452553`
+
+The auditor picks the head block if no specific block is argued at the command line. This test picks up the database information and then compares it with fresh data pulled from the node. Results out to console.log
+
+# Extras
+
+## Identifying top accounts to Index
 
 ```
 node extras/popularContracts.js
 ```
 
-Part of the initialization process utilizes this script. Its intention is to poll sections of the blockchain in order to discover perpetually busy addresses. It takes 40 samplings of 240 consecutive blocks at intervals of 425000 blocks. The resultant set of addresses is then ranked and stored in a json file, then imported into SQL. 
+Part of the initialization process utilizes this script. Its intention is to poll sections of the blockchain in order to discover perpetually busy addresses. It takes 40 samplings of 240 consecutive blocks at intervals of 425000 blocks. The resultant set of addresses is then ranked and stored in a json file, then imported into SQL. It can also run as a standalone.
 
-  Upon running this section took 13.9 minutes to execute at a block height of 16700000
+> Upon running this section took 13.9 minutes to execute at a block height of 16700000
 
-# Etherscan Scraper for account names
+## Etherscan scraper for account names
 
 ```
 node extras/popularLookup.js
@@ -132,7 +132,9 @@ node extras/popularLookup.js
    - D Unknown (Default)
    - N Node
 
-# Hardware requirements
+# Installation
+
+## Hardware requirements
 
  - Ubuntu
  - 64G Ram
@@ -140,15 +142,27 @@ node extras/popularLookup.js
  - SSD with at least 4 Gigs for archival node
  - Second SSD or NVMe for index
 
-# Software Requirements
+## Software Requirements
 
+ - Functional erigon archival node
  - Redis
  - Postgres Database (use tablespaces to assign to a separate drive)
  - NodeJs > 14.9
  - Ethers ~v5 (Note v6 is not compatible)
 
-***
+## Procedure
 
+ - Install Redis
+ - Install Postgres and create a db
+ - configure .env file
+ - git clone https://github.com/snowkidind/txTheRipper.git
+ - npm install
+ - node ripper.js
+
+## Command line interface
+
+If the application has crashed uncleanly, there is a command line interface which appears, thereby pausing operation. Inside, you can utilize the unpause function to allow the program to run as normal. It also contains function to destroy all the tables in the database if you want to restart your sync, and clear the log file located in derived/application/log You can disable logging to file by configuring .env (see below). You can instantiate the cli by arguing at the command line as such: `./ripper.js cli`
+ 
 # Configuration
 
 [system]
@@ -169,6 +183,7 @@ The sync operation requires a direct, preferably same machine connection with a 
 the blockchain ID your node is - Mainnet = 1 https://chainlist.org/
 ```
 RPC_NODE=http://192.168.1.104:8545
+RPC_NODE_WS=http://192.168.1.104:8545
 CHAIN_ID=1
 ```
 
@@ -184,6 +199,8 @@ ETHERSCAN_REQ_RATE=2
 ```
 
 [Database Settings]
+
+In order to connect to the database, first you much create one, and assign it some credentials. In addition to postgres, redis is also required for this installation.
 
 ```
 DB_USER=dbUser
@@ -240,12 +257,22 @@ In total the temp files will comprise about double this space at one point in ti
 JSON_TX_FILE_MAX=50000000
 ```
 
-Bangkok time zone (this is currently unimplemented.)
+when a websocket is closed wait this many seconds until attempting to reconnect (5 seconds)
 
 ```
-UTC_TZ_OFFSET=7
+WS_RECONNECT_TIMEOUT=5
 ```
 
+# To not use an index cache turn this on. Just leave commented out unless you have other purposes
+
+```
+INDEX_CACHE_DISABLE=true
+```
+# To not install regular DB indexes, To render the entire databse unusable, uncomment this
+
+```
+DONT_INDEX=true
+```
 # TODO's
 
 Test the top of the stack
