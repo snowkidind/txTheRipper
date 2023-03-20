@@ -136,11 +136,11 @@ node extras/popularLookup.js
 
 ## Hardware requirements
 
- - Ubuntu
+ - Was bilt on Ubuntu 22
  - 64G Ram
  - Intel i7 class or greater processor
- - SSD with at least 4 Gigs for archival node
- - Second SSD or NVMe for index
+ - SSD with at least 4 Gigs (for archival node)
+ - 1T Second SSD or NVMe (for the index)
 
 ## Software Requirements
 
