@@ -1,6 +1,6 @@
-# TxRipper - the Ethereum Transaction Indexer
+# txTheRipper - the Ethereum Transaction Indexer
 
-txRipper runs alongside your archive node by connecting to its rpc servers websocket to listen for new blocks. When a block is found, it then runs an import program which scans and adds some data for any new transactions. The primary feature of this is looking up transaction history by account. There are some hardware considerations as well as additional storage requirements. 
+txTheRipper runs alongside your archive node by connecting to its rpc servers websocket to listen for new blocks. When a block is found, it then runs an import program which scans and adds some data for any new transactions. The primary feature of this is looking up transaction history by account. There are some hardware considerations as well as additional storage requirements. 
 
 # The structure of the database
 
@@ -108,7 +108,7 @@ The application will connect to your node's websocket and listen for new blocks.
 
 # Account indexed cache
 
-txRipper uses an index cache to record accounts that appear millions of times in the database, having a notable impact on account size. Think USDT, Uniswap Pools, Binance EOA's. These busy Ids are stored in binary (thats BYTEA in PG). 
+txTheRipper uses an index cache to record accounts that appear millions of times in the database, having a notable impact on account size. Think USDT, Uniswap Pools, Binance EOA's. These busy Ids are stored in binary (thats BYTEA in PG). 
 
 In order to do this a pre scan occurs that takes a one hour long sampling of blocks every 450k blocks and accumulates these addresses by rank. Addresses that occur frequently are then converted to an integer index and the original stored in a separate table, thereby reducing the db size (and read/writes) significantly.
 
