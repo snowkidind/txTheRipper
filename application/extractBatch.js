@@ -67,7 +67,6 @@ module.exports = {
   */
 
   extractBatch: async (blockHeight, lastSyncPoint) => {
-
     try {
       txQueue = []
       const tmpFiles = await fs.readdirSync(baseDir) // get rid of any residual junk.
@@ -76,7 +75,6 @@ module.exports = {
         log('rm: ' + baseDir + tmpFiles[i], 4)
         fs.rmSync(baseDir + tmpFiles[i])
       }
-
       const jobId = getId()
       log('NOTICE: Extracting transaction details from node with id: ' + jobId, 2)
       start('Extract Transactions')
@@ -97,13 +95,11 @@ module.exports = {
         blocksProcessed += 1
         const commitEveryNBlocks = Number(process.env.COMMIT_EVERYN_BLOCKS) || 100
         if (blocksProcessed % commitEveryNBlocks === 0) {
-
           const result = await commit(syncFile, block)
           if (result && result.batchFinished === true) {
             log('Batch Finished % 100: ' + result.size, 2)
             return jobId
           }
-
           const pause = await dbAppData.pauseStatus()
           if (pause) {
             log('NOTICE: >>>>>>> Pause flag detected <<<<<< Will Exit at end of this cycle.', 1)
