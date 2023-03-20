@@ -2,9 +2,31 @@
 
 txRipper runs alongside your archive node by connecting to its rpc servers websocket to listen for new blocks. When a block is found, it then runs an import program which scans and adds some data for any new transactions. The primary feature of this is looking up transaction history by account. There are some hardware considerations as well as additional storage requirements. 
 
-# Database
+# The structure of the database
 
-The data is imported to two postgresql tables: "transactions" contains the hash, the blockHeight and timestamp. For each transaction received, any addresses associated with from, to, "input data" as well as all types of calls, including delegate calls are added as rows in the "topic" table, along with a parent id from the transactions table.
+The data is imported to two postgresql tables: "transactions", and "topic"  For each transaction received, any accounts scraped from the transaction will be added as a row in the topic table. 
+
+Accounts are collected from the "from", "to", "input data" fields, as well as all types of calls, including delegate calls and inserted into "topic". This links to the "parent" id in the "transaactions" table.
+
+```
+                        Partitioned table "public.transactions"
+  Column   |  Type   | Collation | Nullable |                 Default
+-----------+---------+-----------+----------+------------------------------------------
+ id        | bigint  |           | not null | nextval('transactions_id_seq'::regclass)
+ block     | integer |           | not null |
+ timestamp | integer |           | not null |
+ hash      | bytea   |           | not null |
+ Partition key: RANGE (block)
+ 
+                        Partitioned table "public.topic"
+ Column  |  Type   | Collation | Nullable |              Default
+---------+---------+-----------+----------+-----------------------------------
+ id      | bigint  |           | not null | nextval('topic_id_seq'::regclass)
+ parent  | integer |           | not null | 
+ account | bytea   |           | not null |
+Partition key: RANGE (id)
+
+```
 
 Sql functions as well as indexes are installed during operation to allow easy access to the data. 
 
