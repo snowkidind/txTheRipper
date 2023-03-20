@@ -1,0 +1,9 @@
+git clone https://github.com/snowkidind/txTheRipper.git
+cd txTheRipper/
+npm install
+cp .env.example .env
+pico .env
+# set everything that looks like it needs setting
+# having the top accounts file on hand and in place will save you 15 minutes on install, but it isnt required.
+# cp /buriram/keny/txRipper/derived/popular/topAccts.json derived/popular/topAccts.json
+node ripper.js
