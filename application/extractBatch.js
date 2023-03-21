@@ -117,7 +117,7 @@ module.exports = {
           }
           const pause = await dbAppData.pauseStatus()
           if (pause) {
-            log('NOTICE: >>>>>>> Pause flag detected <<<<<< Will Exit at end of this cycle.', 1)
+            log('NOTICE: >>>>>>> Extract batch: Pause flag detected <<<<<< Will Exit at end of this cycle.', 1)
             return [jobId, txQueue]
           }
         }

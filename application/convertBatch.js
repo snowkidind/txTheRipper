@@ -13,7 +13,7 @@ module.exports = {
     try {
       const pause = await dbAppData.pauseStatus()
       if (pause) {
-        log('NOTICE: >>>>>>> Pause flag detected <<<<<< Will Exit at end of this cycle.', 1)
+        log('NOTICE: >>>>>>> Convert batch: Pause flag detected <<<<<< Will Exit at end of this cycle.', 1)
       }
       start('Convert Batch')
       log('NOTICE: Converting batch to addressCache', 1)
@@ -60,8 +60,9 @@ module.exports = {
         }
         delete json
         let promises = []
+        log('deploying children for job: ' + jobId, 1)
         for (let i = 0; i < files.length; i++) {
-          log('deploying child: ' + jobId + '_' + i + '.json', 1)
+          
           const cmd = process.env.BASEPATH + 'application/convertChild.js ' + files[i]
           promises.push(system.execCmd(process.env.EXEC_NODE + ' ' + cmd))
         }

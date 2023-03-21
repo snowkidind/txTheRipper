@@ -117,7 +117,7 @@ module.exports = {
     await cleanupSync() // sets working to false
     const pause = await dbAppData.pauseStatus()
     if (pause) {
-      log('NOTICE: >>>>>>> Pause flag detected <<<<<< Exiting.', 1)
+      log('NOTICE: >>>>>>> Synchronize: Pause flag detected <<<<<< Exiting.', 1)
       return 'exit'
     } else {
       return 'ok'

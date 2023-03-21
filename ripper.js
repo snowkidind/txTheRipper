@@ -33,6 +33,7 @@ const echoSettings = () => {
   settings += '    database_name:'.padEnd(30) + process.env.DB_NAME + '\n'
   settings += '    log_level:'.padEnd(30) + process.env.LOG_LEVEL + '\n'
   settings += '    log_to_file:'.padEnd(30) + process.env.LOG_TO_FILE + '\n'
+  settings += '    log_to_file:'.padEnd(30) + process.env.LOG_FILE_LOCATION + '\n'
   settings += '    confirmations:'.padEnd(30) + process.env.CONFIRMATIONS + '\n'
   settings += '    optimize_disk_writes:'.padEnd(30) + process.env.OPTIMIZE_DISK_WRITES + '\n'
   settings += '    commit_every_n_blocks:'.padEnd(30) + process.env.COMMIT_EVERYN_BLOCKS + '\n'
@@ -213,7 +214,7 @@ const setUpWsProviderAndGo = async () => {
     log('NOTICE: Waiting for a block...', 1)
     const pause = await dbAppData.pauseStatus()
     if (pause) {
-      log('NOTICE: >>>>>>> Pause flag detected <<<<<< Entering interactive mode.', 1)
+      log('NOTICE: >>>>>>> Main: Pause flag detected <<<<<< Entering interactive mode.', 1)
       found = true
     }
     events.emitter.on('close', async (source) => {

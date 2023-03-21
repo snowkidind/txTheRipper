@@ -11,7 +11,7 @@ const useRam = process.env.OPTIMIZE_DISK_WRITES === 'true' ? true : false
 const parseDbToDisplay = (string) => {
   const lines = string.split('\n')
   lines.forEach((l) => {
-    log(l, 1)
+    if (l !== '') log(l, 1)
   })
 }
 
@@ -37,7 +37,7 @@ module.exports = {
 
     const pause = await dbAppData.pauseStatus()
     if (pause) {
-      log('NOTICE: >>>>>>> Pause flag detected <<<<<< Will Exit at end of this cycle.', 1)
+      log('NOTICE: >>>>>>> Import Pg: Pause flag detected <<<<<< Will Exit at end of this cycle.', 1)
     }
 
     const batchJsonFile = baseDir + jobId + '.json'

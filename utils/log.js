@@ -9,7 +9,7 @@ if (typeof logLevel === 'undefined') {
 
 const _logToFile = process.env.LOG_TO_FILE
 const logToFile = typeof _logToFile == 'undefined' ? false : _logToFile.trim()
-const logFilePath = process.env.BASEPATH + 'derived/application/log'
+const logFilePath = process.env.LOG_FILE_LOCATION || process.env.BASEPATH + 'derived/application/log.txt'
 
 module.exports = {
   log: (message, level, object) => {
@@ -65,10 +65,10 @@ const logo = () => {
 
 const l =   
 `
-888888 Yb  dP 88""Yb 88 88""Yb 88""Yb 888888 88""Yb 
-  88    YbdP  88__dP 88 88__dP 88__dP 88__   88__dP 
-  88    dPYb  88"Yb  88 88"""  88"""  88""   88"Yb  
-  88   dP  Yb 88  Yb 88 88     88     888888 88  Yb 
+888888 Yb  dP     88""Yb 88 88""Yb 88""Yb 888888 88""Yb 
+  88    YbdP   T  88__dP 88 88__dP 88__dP 88__   88__dP 
+  88    dPYb   H  88"Yb  88 88"""  88"""  88""   88"Yb  
+  88   dP  Yb  E  88  Yb 88 88     88     888888 88  Yb 
 
 @SNOWKIDIND https://github.com/snowkidind/txTheRipper
 `

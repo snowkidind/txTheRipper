@@ -4,7 +4,7 @@ const { log } = require('../utils/log')
 const parseDbToDisplay = (string) => {
   const lines = string.split('\n')
   lines.forEach((l) => {
-    log(l, 1)
+    if (l !== '') log(l, 1)
   })
 }
 
