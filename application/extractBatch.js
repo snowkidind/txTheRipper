@@ -13,6 +13,7 @@ const baseDir = process.env.BASEPATH + 'derived/tmp/'
 
 const fileSizeMax = Number(process.env.JSON_TX_FILE_MAX) || 300000000
 const confirmations = Number(process.env.CONFIRMATIONS) || 20
+const useRam = process.env.OPTIMIZE_DISK_WRITES
 
 let txQueue = []
 
@@ -38,6 +39,15 @@ const commit = async (syncFile, block) => {
     return { batchFinished: true, size: stats.size }
   }
   txQueue = []
+}
+
+const commitMem = async (block) => {
+  await dbAppData.setInt('last_block_scanned', block)
+  if (txQueue.length === 0) return
+  const _json = JSON.stringify(txQueue)
+  if (_json.length > fileSizeMax) {
+    return { batchFinished: true, size: _json.length }
+  }
 }
 
 const stringify = (obj) => {
@@ -95,24 +105,36 @@ module.exports = {
         blocksProcessed += 1
         const commitEveryNBlocks = Number(process.env.COMMIT_EVERYN_BLOCKS) || 100
         if (blocksProcessed % commitEveryNBlocks === 0) {
-          const result = await commit(syncFile, block)
+          let result
+          if (useRam) {
+            result = await commitMem(block)
+          } else {
+            result = await commit(syncFile, block)
+          }
           if (result && result.batchFinished === true) {
-            log('Batch Finished % 100: ' + result.size, 2)
-            return jobId
+            log('Batch Finished % 100: ' + result.size + 'bytes', 2)
+            return [jobId, txQueue]
           }
           const pause = await dbAppData.pauseStatus()
           if (pause) {
             log('NOTICE: >>>>>>> Pause flag detected <<<<<< Will Exit at end of this cycle.', 1)
-            return jobId
+            return [jobId, txQueue]
           }
         }
       }
       // If you passed this it means the project is inSync
-      if (typeof lastBlockProcessed !== 'undefined') await commit(syncFile, lastBlockProcessed)
+      if (typeof lastBlockProcessed !== 'undefined') {
+        if (useRam) {
+          result = await commitMem(block)
+        } else {
+          await commit(syncFile, lastBlockProcessed)
+        }
+      }
       stop('Extract Transactions', true)
-      return jobId
+      return [jobId, txQueue]
     } catch (error) {
       logError(error, 'Application Error in extractBatch')
+      process.exit()
     }
   },
 

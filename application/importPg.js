@@ -6,6 +6,7 @@ const { start, stop, getId } = jobTimer
 const { log, logError } = require('../utils/log')
 
 const baseDir = process.env.BASEPATH + 'derived/tmp/'
+const useRam = process.env.OPTIMIZE_DISK_WRITES
 
 const parseDbToDisplay = (string) => {
   const lines = string.split('\n')
@@ -32,7 +33,7 @@ const addDb = (fileToRead) => {
 }
 
 module.exports = {
-  importTransactionsToPg: async (jobId) => {
+  importTransactionsToPg: async (jobId, _data) => {
 
     const pause = await dbAppData.pauseStatus()
     if (pause) {
@@ -54,8 +55,13 @@ module.exports = {
     // First, generate a sql file out of the JSON
     log('NOTICE: Importing Batch to database', 2)
     start('Import To PG')
-    const _json = fs.readFileSync(batchJsonFile)
-    const json = JSON.parse(_json)
+    let json
+    if (useRam) {
+      json = _data
+    } else {
+      const _json = fs.readFileSync(batchJsonFile)
+      json = JSON.parse(_json)
+    }
     if (json.length === 0) {
       return true
     }

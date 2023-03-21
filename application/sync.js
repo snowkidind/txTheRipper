@@ -77,7 +77,7 @@ module.exports = {
       application isnt running, it is safe to remove files from /derived/tmp
     */
 
-    const jobId = await extractBatch(blockHeight, lastSyncPoint)
+    const [jobId, data] = await extractBatch(blockHeight, lastSyncPoint)
     if (typeof jobId === 'undefined') {
       // the app crashed or had some issue
       await cleanupSync()
@@ -91,16 +91,19 @@ module.exports = {
       tables but it extends the life of SSD's and NVMe's
     */
 
+    let converted
     const indexCacheDisable = process.env.INDEX_CACHE_DISABLE || 'false'
     if (indexCacheDisable === 'false') {
-      await convertBatchAccounts(jobId)
+      converted = await convertBatchAccounts(jobId, data)
+    } else {
+      converted = data
     }
     
     /* 
       Once the JSON files have been processed, then the script generates a sql file for postgres
       to run (on a separate thread) This utilizes multi cores.
     */
-    const success = await importTransactionsToPg(jobId)
+    const success = await importTransactionsToPg(jobId, converted)
     if (success === false) {
       await cleanupSync()
       return 'error'
