@@ -96,11 +96,11 @@ module.exports = {
       let maxTopics = 10000000000 // A valid hack to get more partitions would be to just increase this number
       // TODO: ensure partitions arent encroaching on max topics
 
-      const topicRange = 250000000
+      const topicRange = 250000000 // number of topics per partition
       const partitions = maxTopics / topicRange // 40
       const tables = await c.showTables()
       let count = 0
-      tables.forEach((table) => {
+      tables.forEach((table) => { 
         if (table.table_name.startsWith('topic_')) count += 1
       })
       if (count < partitions) {

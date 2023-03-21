@@ -1,7 +1,7 @@
 const env = require('node-env-file')
 env(__dirname + '/../.env')
 const fs = require('fs')
-
+const dbContractCache = require('../db/contract_cache.js')
 const { log, logError } = require('../utils/log')
 const redis = require('../db/redis.js')
 
@@ -24,39 +24,52 @@ try {
 }
 
 let _jobId = filePath.split('_')
-let jobId = _jobId[_jobId.length -1].replace('.json', '')
+let jobId = _jobId[_jobId.length - 1].replace('.json', '')
 
-; (async () => {
-  // log('child:accountCache jobId: ' + jobId + ' starting with pId: ' + process.pid, 1)
-  const key = 'ripper:contractCache'
-  let addressCache
-  const cc = await redis.get(key)
-  if (!cc) {
-    addressCache = await dbContractCache.getCache(cacheLimit)
-    redis.set(key, JSON.stringify(addressCache), 12 * 60 * 60) // 12 hours
-  } else {
-    addressCache = JSON.parse(cc)
-  }
-  const _json = await fs.readFileSync(filePath)
-  const json = JSON.parse(_json)
-  let matches = 0
-  for (let i = 0; i < addressCache.length; i++) {
-    for (let j = 0; j < json.length; j++) {
-      for (let k = 0; k < json[j].topics.length; k++) {
-        if (addressCache[i].account === json[j].topics[k]) {
-          matches += 1
-          // log('Match: ' + addressCache[i].account + ' ' + json[j].topics[k] + ' -> ' + addressCache[i].byteId)
-          json[j].topics[k] = addressCache[i].byteId
+  ; (async () => {
+    try {
+      // log('child:accountCache jobId: ' + jobId + ' starting with pId: ' + process.pid, 1)
+      const key = 'ripper:contractCache'
+      let addressCache
+      let cc = await redis.get(key) // possibly max connections reached
+      if (!cc) {
+        await sleep(2000)
+        cc = await redis.get(key)
+        if (!cc) {
+          log('WARNING: Attempting to re-insert dbContractCache to redis, child ' + jobId)
+          addressCache = await dbContractCache.getCache(cacheLimit)
+          // Redis may be ded if we got here. 
+          await redis.set(key, JSON.stringify(addressCache), 12 * 60 * 60) // 12 hours
+          console.log('Reboot successful ' + jobId)
         }
+      } else {
+        addressCache = JSON.parse(cc)
       }
+      const _json = await fs.readFileSync(filePath)
+      const json = JSON.parse(_json)
+      let matches = 0
+      for (let i = 0; i < addressCache.length; i++) {
+        for (let j = 0; j < json.length; j++) {
+          for (let k = 0; k < json[j].topics.length; k++) {
+            if (addressCache[i].account === json[j].topics[k]) {
+              matches += 1
+              // log('Match: ' + addressCache[i].account + ' ' + json[j].topics[k] + ' -> ' + addressCache[i].byteId)
+              json[j].topics[k] = addressCache[i].byteId
+            }
+          }
+        }
+        // if (i % 2500 === 0) log('child: ' + jobId + ' accountCache: ' + percent(addressCache.length, i) + '% ', 1)
+      }
+      fs.writeFileSync(filePath, JSON.stringify(json))
+      log('child:accountCache ' + jobId + ' completed successfully.', 1)
+      process.exit(0)
+    } catch (error) {
+      logError(error, 'Child Error. ' + jobId)
     }
-    // if (i % 2500 === 0) log('child: ' + jobId + ' accountCache: ' + percent(addressCache.length, i) + '% ', 1)
-  }
-  fs.writeFileSync(filePath, JSON.stringify(json))
-  log('child:accountCache ' + jobId + ' completed successfully.', 1)
-  process.exit(0)
-})()
+  })()
 
 const percent = (size, i) => {
   return Math.floor(i / size * 100)
 }
+
+const sleep = (m) => { return new Promise(r => setTimeout(r, m)) }

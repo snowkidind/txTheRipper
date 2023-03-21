@@ -31,7 +31,7 @@ module.exports = {
       const cc = await dbRedis.get(key)
       if (!cc) {
         addressCache = await dbContractCache.getCache(cacheLimit)
-        dbRedis.set(key, JSON.stringify(addressCache), 12 * 60 * 60) // 12 hours
+        await dbRedis.set(key, JSON.stringify(addressCache), 12 * 60 * 60) // 12 hours
       } else {
         addressCache = JSON.parse(cc)
       }
@@ -62,7 +62,7 @@ module.exports = {
         let promises = []
         log('deploying children for job: ' + jobId, 1)
         for (let i = 0; i < files.length; i++) {
-          
+          // TODO check that the order of this returns in the proper order
           const cmd = process.env.BASEPATH + 'application/convertChild.js ' + files[i]
           promises.push(system.execCmd(process.env.EXEC_NODE + ' ' + cmd))
         }
