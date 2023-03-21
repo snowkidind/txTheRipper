@@ -13,7 +13,7 @@ const baseDir = process.env.BASEPATH + 'derived/tmp/'
 
 const fileSizeMax = Number(process.env.JSON_TX_FILE_MAX) || 300000000
 const confirmations = Number(process.env.CONFIRMATIONS) || 20
-const useRam = process.env.OPTIMIZE_DISK_WRITES
+const useRam = process.env.OPTIMIZE_DISK_WRITES === 'true' ? true : false
 
 let txQueue = []
 

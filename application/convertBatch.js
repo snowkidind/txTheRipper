@@ -6,7 +6,7 @@ const { log, logError } = require('../utils/log')
 
 const contractCacheMax = 10000
 const baseDir = process.env.BASEPATH + 'derived/tmp/'
-const useRam = process.env.OPTIMIZE_DISK_WRITES
+const useRam = process.env.OPTIMIZE_DISK_WRITES === 'true' ? true : false
 
 module.exports = {
   convertBatchAccounts: async (jobId, _data) => {

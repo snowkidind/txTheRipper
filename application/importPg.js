@@ -6,7 +6,7 @@ const { start, stop, getId } = jobTimer
 const { log, logError } = require('../utils/log')
 
 const baseDir = process.env.BASEPATH + 'derived/tmp/'
-const useRam = process.env.OPTIMIZE_DISK_WRITES
+const useRam = process.env.OPTIMIZE_DISK_WRITES === 'true' ? true : false
 
 const parseDbToDisplay = (string) => {
   const lines = string.split('\n')
