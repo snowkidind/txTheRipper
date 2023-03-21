@@ -25,22 +25,22 @@ const initialInit = async () => {
 }
 
 const echoSettings = () => {
-  let settings = 'Application Settings: '
-  settings += 'basepath:'.padStart(2).padEnd(25), process.env.BASEPATH + '/n'
-  settings += 'rpc:'.padStart(2).padEnd(25), process.env.RPC_NODE + '/n'
-  settings += 'rpcws:'.padStart(2).padEnd(25), process.env.RPC_NODE_WS + '/n'
-  settings += 'reconnect_timeout:'.padStart(2).padEnd(25), process.env.WS_RECONNECT_TIMEOUT + '/n'
-  settings += 'database_name:'.padStart(2).padEnd(25), process.env.DB_NAME + '/n'
-  settings += 'log_level:'.padStart(2).padEnd(25), process.env.LOG_LEVEL + '/n'
-  settings += 'log_to_file:'.padStart(2).padEnd(25), process.env.LOG_TO_FILE + '/n'
-  settings += 'confirmations:'.padStart(2).padEnd(25), process.env.CONFIRMATIONS + '/n'
-  settings += 'optimize_disk_writes:'.padStart(2).padEnd(25), process.env.OPTIMIZE_DISK_WRITES + '/n'
-  settings += 'commit_every_n_blocks:'.padStart(2).padEnd(25), process.env.COMMIT_EVERYN_BLOCKS + '/n'
-  settings += 'json_file_max:'.padStart(2).padEnd(25), process.env.JSON_TX_FILE_MAX + '/n'
-  settings += 'use_multi_threads:'.padStart(2).padEnd(25), process.env.USE_MULTI_THREADS + '/n'
-  settings += 'number_of_threads:'.padStart(2).padEnd(25), process.env.MULTI_THREADS + '/n'
-  settings += 'index_cache_disable:'.padStart(2).padEnd(25), process.env.INDEX_CACHE_DISABLE + '/n'
-  settings += 'dont_index:'.padStart(2).padEnd(25), process.env.DONT_INDEX + '/n'
+  let settings = '\n\nApplication Settings:\n'
+  settings += '    basepath:'.padEnd(30) + process.env.BASEPATH + '\n'
+  settings += '    rpc:'.padEnd(30) + process.env.RPC_NODE + '\n'
+  settings += '    rpcws:'.padEnd(30) + process.env.RPC_NODE_WS + '\n'
+  settings += '    reconnect_timeout:'.padEnd(30) + process.env.WS_RECONNECT_TIMEOUT + '\n'
+  settings += '    database_name:'.padEnd(30) + process.env.DB_NAME + '\n'
+  settings += '    log_level:'.padEnd(30) + process.env.LOG_LEVEL + '\n'
+  settings += '    log_to_file:'.padEnd(30) + process.env.LOG_TO_FILE + '\n'
+  settings += '    confirmations:'.padEnd(30) + process.env.CONFIRMATIONS + '\n'
+  settings += '    optimize_disk_writes:'.padEnd(30) + process.env.OPTIMIZE_DISK_WRITES + '\n'
+  settings += '    commit_every_n_blocks:'.padEnd(30) + process.env.COMMIT_EVERYN_BLOCKS + '\n'
+  settings += '    json_file_max:'.padEnd(30) + process.env.JSON_TX_FILE_MAX + '\n'
+  settings += '    use_multi_threads:'.padEnd(30) + process.env.USE_MULTI_THREADS + '\n'
+  settings += '    number_of_threads:'.padEnd(30) + process.env.MULTI_THREADS + '\n'
+  settings += '    index_cache_disable:'.padEnd(30) + process.env.INDEX_CACHE_DISABLE + '\n'
+  settings += '    dont_index:'.padEnd(30) + process.env.DONT_INDEX + '\n'
   log(settings, 1)
 }
 
