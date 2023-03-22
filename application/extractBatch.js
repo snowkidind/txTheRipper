@@ -142,7 +142,10 @@ module.exports = {
     const a = await provider.getBlock(Number(block))
     const b = provider.send('trace_block', [Number(block)])
     const [blockInfo, tb] = await Promise.all([a, b])
-    const [transactions, newContracts] = extractTopicsFromInputData(tb)
+    const [transactions, newContracts, parsedTrace] = extractTopicsFromInputData(tb)
+    
+    // call our external services here
+
     if (block % 200 === 0) {
       log('Block: ' + blockInfo.number + ': ' + timeFmtDb(Number(blockInfo.timestamp) * 1000) + ' tx: ' + Object.keys(transactions).length + ' newContracts: ' + newContracts.length, 2)
     }

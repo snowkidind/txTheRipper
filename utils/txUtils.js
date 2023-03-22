@@ -56,6 +56,6 @@ module.exports = {
       })
       txns[hash] = new Set(topics)
     }
-    return [txns, newContracts]
+    return [txns, newContracts, txnsPre]
   }
 }
