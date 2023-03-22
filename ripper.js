@@ -197,7 +197,7 @@ const setUpWsProviderAndGo = async () => {
       await cleanup(0)
     })
     process.on('SIGINT', async () => {
-      log('NOTICE: >>>>>>> Ctl-C acknowledged <<<<<< Will Exit at end of this cycle.', 1)
+      log('NOTICE: >>>>>>> Ctl-C acknowledged <<<<<< Will Exit at end of this cycle. pId:' + process.pid, 1)
       await cleanup(0)
     })
     process.on('SIGTERM', async () => {

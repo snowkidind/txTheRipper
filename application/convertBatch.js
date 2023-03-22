@@ -52,10 +52,19 @@ module.exports = {
         const threads = mt - 1
         const divisor = Math.floor(json.length / threads) + 1
         const files = []
+
+        const keys = await dbRedis.keys('ripper:child*')
+        for (let i = 0; i < keys.length; i++) {
+          // log('redis.del: ' + keys[i], 3)
+          await dbRedis.del(keys[i])
+        }
+
         for (let i = 0; i < json.length; i += divisor) {
           const data = json.slice(i, i + divisor)
           if (useRedisData) {
-            await redis.set('ripper:child:' + jobId, JSON.stringify(data))
+            const key = 'ripper:child:' + jobId + '_' + i
+            await dbRedis.set(key, JSON.stringify(data))
+            files.push(key)
           } else {
             const filePath = baseDir + jobId + '_' + i + '.json'
             fs.writeFileSync(filePath, stringify(data))
@@ -68,23 +77,25 @@ module.exports = {
         for (let i = 0; i < files.length; i++) {
           // TODO check that the order of this returns in the proper order
           const cmd = process.env.BASEPATH + 'application/convertChild.js ' + files[i]
-          promises.push(system.execCmd(process.env.EXEC_NODE + ' ' + cmd))
+          promises.push(system.execCmd(process.env.EXEC_NODE + ' ' + cmd, true))
         }
         await Promise.all(promises)
+        // log('all child processes completed: ' + jobId, 1)
         let jsonOut = []
         for (let i = 0; i < files.length; i++) {
           let _file
           if (useRedisData) {
-            _file = await redis.get('ripper:child:' + jobId + '_out')
+            _file = await dbRedis.get(files[i] + '_out')
+            await dbRedis.del(files[i] + '_out')
           } else {
             _file = fs.readFileSync(files[i])
+            fs.rmSync(files[i])
           }
           const data = JSON.parse(_file)
           jsonOut = [...jsonOut, ...data] // Combine split files into output
-          fs.rmSync(files[i])
         }
         if (jsonOut.length !== jsonL) {
-          throw 'ERROR: files were munged during translation.'
+          throw 'ERROR: files were munged during translation: ' + jsonOut.length + ' !=== ' + jsonL
         }
         if (!useRam) {
           fs.writeFileSync(batchJsonFile, stringify(jsonOut, null, 4))

@@ -5,27 +5,6 @@ const dbContractCache = require('../db/contract_cache.js')
 const redis = require('../db/redis.js')
 const { log, logError } = require('../utils/log')
 
-let filePath
-try {
-  if (typeof process.argv[2] !== 'undefined') {
-    filePath = process.argv[2]
-  }
-  const exists = fs.existsSync(filePath)
-  if (!exists) {
-    console.log('ERROR: spawn file does not exist', 1)
-    process.exit(1)
-  }
-  if (!filePath) {
-    console.log('ERROR: path was not set. ' + process.argv[2], 1)
-    process.exit(1)
-  }
-} catch (error) {
-  console.log(error)
-}
-
-let _jobId = filePath.split('_')
-let jobId = _jobId[_jobId.length - 1].replace('.json', '')
-
 /* 
 
   RE: Redis configuration. So far no steps have been taken to configure redis, but here is some information.
@@ -50,6 +29,36 @@ let jobId = _jobId[_jobId.length - 1].replace('.json', '')
 */
 const useRedisData = process.env.USE_REDIS_DATA === 'true' ? true : false
 
+let filePath
+try {
+  if (typeof process.argv[2] !== 'undefined') {
+    filePath = process.argv[2]
+  }
+  if (!useRedisData) {
+    const exists = fs.existsSync(filePath)
+    if (!exists) {
+      console.log('ERROR: spawn file does not exist', 1)
+      process.exit(1)
+    }
+  }
+  if (!filePath) {
+    console.log('ERROR: path or key was not set. ' + process.argv[2], 1)
+    process.exit(1)
+  }
+} catch (error) {
+  console.log(error)
+}
+
+
+let jobId
+if (useRedisData) {
+  jobId = filePath
+} else {
+  let _jobId = filePath.split('_')
+  jobId = _jobId[_jobId.length - 1].replace('.json', '')
+}
+
+
   ; (async () => {
     try {
       // console.log('child:accountCache jobId: ' + jobId + ' starting with pId: ' + process.pid, 1)
@@ -70,7 +79,7 @@ const useRedisData = process.env.USE_REDIS_DATA === 'true' ? true : false
         addressCache = JSON.parse(cc)
       }
 
-      const keyRedis = 'ripper:child:' + jobId
+      const keyRedis = jobId
       let json, _json
       if (useRedisData) {
         _json = await redis.get(keyRedis)
@@ -79,6 +88,9 @@ const useRedisData = process.env.USE_REDIS_DATA === 'true' ? true : false
       }
       await redis.del(keyRedis)
       json = JSON.parse(_json)
+      if (json.length === 0) {
+        console.log('This JSON file is empty.')
+      }
       delete _json
       let matches = 0
       for (let i = 0; i < addressCache.length; i++) {
@@ -99,7 +111,7 @@ const useRedisData = process.env.USE_REDIS_DATA === 'true' ? true : false
       } else {
         fs.writeFileSync(filePath, JSON.stringify(json))
       }
-      console.log('child:accountCache ' + jobId + ' completed successfully.', 1)
+      // console.log(jobId + ' completed successfully.', 1)
       process.exit(0)
     } catch (error) {
       console.log(error, 'Child Error. ' + jobId)
