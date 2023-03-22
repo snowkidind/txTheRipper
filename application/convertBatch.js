@@ -7,6 +7,7 @@ const { log, logError } = require('../utils/log')
 const contractCacheMax = 10000
 const baseDir = process.env.BASEPATH + 'derived/tmp/'
 const useRam = process.env.OPTIMIZE_DISK_WRITES === 'true' ? true : false
+const useRedisData = process.env.USE_REDIS_DATA === 'true' ? true : false
 
 module.exports = {
   convertBatchAccounts: async (jobId, _data) => {
@@ -53,10 +54,13 @@ module.exports = {
         const files = []
         for (let i = 0; i < json.length; i += divisor) {
           const data = json.slice(i, i + divisor)
-          const filePath = baseDir + jobId + '_' + i + '.json'
-          // log(filePath + ' ' + data.length + ' entries', 2)
-          fs.writeFileSync(filePath, stringify(data))
-          files.push(filePath)
+          if (useRedisData) {
+            await redis.set('ripper:child:' + jobId, JSON.stringify(data))
+          } else {
+            const filePath = baseDir + jobId + '_' + i + '.json'
+            fs.writeFileSync(filePath, stringify(data))
+            files.push(filePath)
+          }
         }
         delete json
         let promises = []
@@ -69,7 +73,12 @@ module.exports = {
         await Promise.all(promises)
         let jsonOut = []
         for (let i = 0; i < files.length; i++) {
-          const _file = fs.readFileSync(files[i])
+          let _file
+          if (useRedisData) {
+            _file = await redis.get('ripper:child:' + jobId + '_out')
+          } else {
+            _file = fs.readFileSync(files[i])
+          }
           const data = JSON.parse(_file)
           jsonOut = [...jsonOut, ...data] // Combine split files into output
           fs.rmSync(files[i])

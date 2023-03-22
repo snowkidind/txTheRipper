@@ -25,28 +25,8 @@ try {
 let _jobId = filePath.split('_')
 let jobId = _jobId[_jobId.length - 1].replace('.json', '')
 
-/* 
+const useRedisData = process.env.USE_REDIS_DATA === 'true' ? true : false
 
-  RE: Redis configuration. So far no steps have been taken to configure redis, but here is some information.
-
-  See Also: https://redis.io/docs/reference/clients/  
-  
-  Since these are all deployed simultaneously, there is a chance when using memory that redis gets overwhelmed
-  items of concern:
-
-   "Every client is also subject to a query buffer limit. This is a non-configurable 
-   hard limit that will close the connection when the client query buffer (that is the 
-    buffer we use to accumulate commands from the client) reaches 1 GB"
-
-    *maxmemory-clients* can be set permanently in the configuration file (redis.conf) 
-    or via the CONFIG SET command. This setting can either be 0 (meaning no limit), 
-    a size in bytes (possibly with mb/gb suffix), or a percentage of maxmemory by 
-    using the % suffix (e.g. setting it to 10% would mean 10% of the maxmemory configuration).
-
-    The default setting is 0, meaning client eviction is turned off by default. However, 
-    for any large production deployment, it is highly recommended to configure some non-zero 
-    maxmemory-clients value. A value 5%, for example, can be a good place to start.
-*/
   ; (async () => {
     try {
       // console.log('child:accountCache jobId: ' + jobId + ' starting with pId: ' + process.pid, 1)
@@ -66,8 +46,17 @@ let jobId = _jobId[_jobId.length - 1].replace('.json', '')
       } else {
         addressCache = JSON.parse(cc)
       }
-      const _json = await fs.readFileSync(filePath)
-      const json = JSON.parse(_json)
+
+      const keyRedis = 'ripper:child:' + jobId
+      let json, _json
+      if (useRedisData) {
+        _json = await redis.get(keyRedis)
+      } else {
+        _json = await fs.readFileSync(filePath)
+      }
+      await redis.del(keyRedis)
+      json = JSON.parse(_json)
+      delete _json
       let matches = 0
       for (let i = 0; i < addressCache.length; i++) {
         for (let j = 0; j < json.length; j++) {
@@ -81,7 +70,12 @@ let jobId = _jobId[_jobId.length - 1].replace('.json', '')
         }
         // if (i % 2500 === 0) console.log('child: ' + jobId + ' accountCache: ' + percent(addressCache.length, i) + '% ', 1)
       }
-      fs.writeFileSync(filePath, JSON.stringify(json))
+
+      if (useRedisData) {
+        await redis.set(keyRedis + '_out', JSON.stringify(json))
+      } else {
+        fs.writeFileSync(filePath, JSON.stringify(json))
+      }
       console.log('child:accountCache ' + jobId + ' completed successfully.', 1)
       process.exit(0)
     } catch (error) {
