@@ -285,6 +285,12 @@ when a websocket is closed wait this many seconds until attempting to reconnect 
 WS_RECONNECT_TIMEOUT=5
 ```
 
+Instead of delegating child jobs with files, use redis to pass data
+
+```
+USE_REDIS_DATA=true
+```
+
 # To not use an index cache turn this on. Just leave commented out unless you have other purposes
 
 ```
