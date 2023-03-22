@@ -3,6 +3,7 @@ env(__dirname + '/../.env')
 const fs = require('fs')
 const dbContractCache = require('../db/contract_cache.js')
 const redis = require('../db/redis.js')
+const { log, logError } = require('../utils/log')
 
 let filePath
 try {
@@ -47,6 +48,8 @@ let jobId = _jobId[_jobId.length - 1].replace('.json', '')
     for any large production deployment, it is highly recommended to configure some non-zero 
     maxmemory-clients value. A value 5%, for example, can be a good place to start.
 */
+const useRedisData = process.env.USE_REDIS_DATA === 'true' ? true : false
+
   ; (async () => {
     try {
       // console.log('child:accountCache jobId: ' + jobId + ' starting with pId: ' + process.pid, 1)
@@ -66,8 +69,17 @@ let jobId = _jobId[_jobId.length - 1].replace('.json', '')
       } else {
         addressCache = JSON.parse(cc)
       }
-      const _json = await fs.readFileSync(filePath)
-      const json = JSON.parse(_json)
+
+      const keyRedis = 'ripper:child:' + jobId
+      let json, _json
+      if (useRedisData) {
+        _json = await redis.get(keyRedis)
+      } else {
+        _json = await fs.readFileSync(filePath)
+      }
+      await redis.del(keyRedis)
+      json = JSON.parse(_json)
+      delete _json
       let matches = 0
       for (let i = 0; i < addressCache.length; i++) {
         for (let j = 0; j < json.length; j++) {
@@ -81,11 +93,17 @@ let jobId = _jobId[_jobId.length - 1].replace('.json', '')
         }
         // if (i % 2500 === 0) console.log('child: ' + jobId + ' accountCache: ' + percent(addressCache.length, i) + '% ', 1)
       }
-      fs.writeFileSync(filePath, JSON.stringify(json))
+
+      if (useRedisData) {
+        await redis.set(keyRedis + '_out', JSON.stringify(json))
+      } else {
+        fs.writeFileSync(filePath, JSON.stringify(json))
+      }
       console.log('child:accountCache ' + jobId + ' completed successfully.', 1)
       process.exit(0)
     } catch (error) {
       console.log(error, 'Child Error. ' + jobId)
+      logError(error)
     }
   })()
 

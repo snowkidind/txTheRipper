@@ -16,7 +16,7 @@ module.exports = {
       const lastScanned = await dbAppData.getInt('last_block_scanned') // Read Node but potentially not loaded in
       await dbAppData.setInt('block_sync', lastScanned) 
       if (fs.existsSync(batchJsonFile)) fs.rmSync(batchJsonFile)
-      if (fs.existsSync(batchSqlFile)) fs.rmSync(batchSqlFile)
+      // if (fs.existsSync(batchSqlFile)) fs.rmSync(batchSqlFile)
       log('Round completed to block ' + lastScanned + ', preparing to get next block range...',1)
       memStats(true)
     }
