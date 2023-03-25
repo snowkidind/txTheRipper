@@ -5,3 +5,7 @@ exports.dbRedis = require('./redis.js')
 exports.dbInit = require('./init.js')
 exports.dbTopic = require('./topic.js')
 exports.dbTransactions = require('./transactions.js')
+
+exports.dbSubscriptions = require('./subscriptions.js')
+exports.dbProfiles = require('./profiles.js')
+exports.dbApiKeys = require('./api_keys.js')
