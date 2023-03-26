@@ -14,6 +14,7 @@ let wsProvider
 
 const application = require('./application/sync.js')
 const popularDir = process.env.BASEPATH + '/derived/popular/'
+const subscriptionRouter = require('./application/subscriptions/router.js')
 
 // Set up db variables on first and only first run
 const initialInit = async () => {
@@ -42,6 +43,10 @@ const echoSettings = () => {
   settings += '    number_of_threads:'.padEnd(30) + process.env.MULTI_THREADS + '\n'
   settings += '    index_cache_disable:'.padEnd(30) + process.env.INDEX_CACHE_DISABLE + '\n'
   settings += '    dont_index:'.padEnd(30) + process.env.DONT_INDEX + '\n'
+  settings += '    sub_suspend_all:'.padEnd(30) + process.env.SUB_SUSPEND_ALL + '\n'
+  settings += '    sub_use_unix_socket:'.padEnd(30) + process.env.SUB_USE_UNIX_SOCKET + '\n'
+  settings += '    sub_unix_socket:'.padEnd(30) + process.env.SUB_UNIX_SOCKET + '\n'
+  settings += '    sub_type_account:'.padEnd(30) + process.env.SUB_TYPE_ACCOUNT + '\n'
   log(settings, 1)
 }
 
@@ -103,6 +108,7 @@ const init = async () => {
     }
   }
   await dbInit.assignPopularAddresses() // establish the contract cache
+  await subscriptionRouter.init()
 }
 
 const sleep = (m) => { return new Promise(r => setTimeout(r, m)) }
@@ -222,14 +228,12 @@ const setUpWsProviderAndGo = async () => {
         logStats(source)
         // log('NOTICE: ' + source + ' has finished, exiting', 4, system.memStats(false))
         await dbAppData.markUnPaused()
-        console.log('D')
         process.exit(0)
       } else if (source === 'ws_error') {
         logError()
         logStats(source)
         // log('NOTICE: ' + source + ' has finished, exiting', 4, system.memStats(false))
         await dbAppData.markUnPaused()
-        console.log('C')
         process.exit(0)
       }
     })

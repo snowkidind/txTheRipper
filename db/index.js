@@ -8,4 +8,4 @@ exports.dbTransactions = require('./transactions.js')
 
 exports.dbSubscriptions = require('./subscriptions.js')
 exports.dbProfiles = require('./profiles.js')
-exports.dbApiKeys = require('./api_keys.js')
+

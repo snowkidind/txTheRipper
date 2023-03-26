@@ -2,6 +2,16 @@
 
 txTheRipper runs alongside your archive node by connecting to its rpc servers websocket to listen for new blocks. When a block is found, it then runs an import program which scans and adds some data for any new transactions. The primary feature of this is looking up transaction history by account. There are some hardware considerations as well as additional storage requirements. 
 
+# subscriptions
+
+Subscribe to get notifications from incoming transactions on an service by service basis. The application provides delivery methods via unix socket and redis pub/sub. The data that is delivered contains
+- the transaction hash
+- topics (accounts) this includes all types of calls and accounts harvested from input data
+- the full trace of the transaction
+
+See the page that is [All about subscriptions](application/subscriptions/SUBSCRIPTIONS.md) 
+
+
 # The structure of the database
 
 The data is imported to two postgresql tables: "transactions", and "topic"  For each transaction received, any accounts scraped from the transaction will be added as a row in the topic table. 
@@ -291,16 +301,42 @@ Instead of delegating child jobs with files, use redis to pass data
 USE_REDIS_DATA=true
 ```
 
-# To not use an index cache turn this on. Just leave commented out unless you have other purposes
+To not use an index cache turn this on. Just leave commented out unless you have other purposes
 
 ```
 INDEX_CACHE_DISABLE=true
 ```
-# To not install regular DB indexes, To render the entire databse unusable, uncomment this
+To not install regular DB indexes, Basically to render the entire databse unusable, uncomment this
 
 ```
 DONT_INDEX=true
 ```
-# TODO's
 
-Test the top of the stack
+[subscriptions]
+(Work in progress) The subscriptions module allows events to be either broadcasted via redis or unix socket. During the indexing of a block, which the trace is being read it allows the program to efficiently deliver notifications about such events. In the future a rest server will be built on the unix socket to allow for external use of the api. You can use both connection methods but because of sandboxing it will take up double the resources which may matter when subscribed to many accounts, so its recommended to use one or the other message delivery methods.
+
+```
+SUB_SUSPEND_ALL=false
+```
+
+Subscription service delivery methods:
+Enable subscriptions based on the unix socket path below
+
+```
+SUB_USE_UNIX_SOCKET=true
+SUB_UNIX_SOCKET=/issan/keny/txTheRipper/derived/application/ripper.sock
+```
+
+Enable subscriptions where notifications are delivered to the redis config above.
+```
+SUB_USE_REDIS=true
+```
+
+for all delivery methods above, add the services supported here
+
+the account service is a simple filter which provides data when a particular account 
+is found in topics of a transaction
+
+```
+SUB_TYPE_ACCOUNT=true
+```

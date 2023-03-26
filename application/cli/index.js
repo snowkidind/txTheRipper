@@ -12,12 +12,14 @@ const { getAnswer } = require('./common.js')
 const { system } = require('../../utils')
 const { dbAppData } = require('../../db')
 const { log, logError, clearLog } = require('../../utils/log')
+const subscriptions = require('./subscriptions.js')
 
 const mainMenu = async () => {
 
   const pause = await dbAppData.pauseStatus() ? 'Paused' : 'Not Paused'
   
   let menu = "\n  ####### Main Menu: #######\n\n"
+  menu += "  s    Subscriptions Menu\n"
   menu += "  n    Nuke the database\n"
   menu += "  p    Pause the application, currently: " + pause + "\n"
   menu += "  u    Unpause the application\n"
@@ -30,7 +32,12 @@ const mainMenu = async () => {
   const query = args[0]
   const baseDir = process.env.BASEPATH + 'derived/tmp/'
 
-  if (query === "n") {
+  if (query === "s") {
+    await subscriptions.mainMenu(rl)
+    return
+  }
+
+  else if (query === "n") {
     const message = "Nuke the entire Database?"
     const execute = await getAnswer(rl, message, mainMenu)
     if (execute === 'y') {

@@ -1,21 +1,13 @@
 const net = require('net')
-const { log, logError } = require('../utils/log')
-const { randomString } = require('../utils/system.js')
-const { dbApiKeys, dbProfiles } = require('../db')
-const events = require('../utils/events.js')
+const { log, logError } = require('../../utils/log')
+const { randomString } = require('../../utils/system.js')
+const { dbProfiles } = require('../../db')
+const events = require('../../utils/events.js')
 
 let connections = {}
 
-const checkApiKey = async (apiKey) => {
-  const dbKey = await dbApiKeys.get(apiKey)
-  if (typeof dbKey !== 'undefined') {
-    return dbKey
-  }
-  return false
-}
-
 module.exports = {
-  newServer: (socketFile = process.env.UNIX_SOCKET) => {
+  newServer: (socketFile = process.env.SUB_UNIX_SOCKET) => {
     return new Promise ((resolve, reject) => {
       try {
         const server = net.createServer( c => {
@@ -33,32 +25,23 @@ module.exports = {
             delete connections[id] 
           })
 
-          // Requests must be a formatted object and contain the type property and an apiKey property
+          // Requests must be a formatted object and contain the type property
           c.on('data', async (msg) => {
             let message
             try {
               message = JSON.parse(msg)
-              if (typeof message.apiKey === 'undefined') {
-                c.write(JSON.stringify({ error: 'Cannot Authenticate: Message must have an apiKey property' }, null, 2))
-                return
-              }
               if (typeof message.type === 'undefined') {
                 c.write(JSON.stringify({ error: 'Cannot Route: Message must have a type property' }, null, 2))
                 return
               }
             } catch (error) {
-              console.log(error)
+              logError(error)
               c.write(JSON.stringify({ error: 'Invalid JSON' }, null, 2))
               return
             }
-            const apiKey = await checkApiKey(message.apiKey)
-            if (typeof apiKey === 'undefined') {
-              module.exports.sendMessage(message.client, { error: 'invalid credentials' }, true)
-              return
-            }
-            const profile = await dbProfiles.get(apiKey.profileId)
+            const profile = await dbProfiles.getByIdentifier(message.identifier)
             if (typeof profile === 'undefined') {
-              module.exports.sendMessage(message.client, { error: 'profile for api key is missing' }, true)
+              module.exports.sendMessage(message.client, { error: 'profile for identifier is missing' }, true)
               return
             }
             const payload = { message: message, profile: profile }
@@ -89,7 +72,7 @@ module.exports = {
 
   sendMessage: (id, message, disconnect) => {
     if (typeof message !== 'object') throw "Cannot stringify something that is not an object!"
-    if (connections[id]) connections[id].write(JSON.stringify(message))
+    if (connections[id]) connections[id].write(JSON.stringify(message) + '\n')
     if (disconnect) {
       connections[id].destroy()
     }

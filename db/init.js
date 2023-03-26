@@ -26,7 +26,9 @@ module.exports = {
       topic: false,
       transactions: false,
       application_data: false,
-      contract_cache: false
+      contract_cache: false,
+      subscriptions: false,
+      profiles: false,
     }
     let count = 0
     tables.forEach((t) => {
@@ -40,7 +42,7 @@ module.exports = {
     if (count === 0) {
       log('NOTICE: Initializing database...', 1)
       await execSqlFile(schemaDir + 'schema_pre.sql')
-    } else if (count < 4) {
+    } else if (count < Object.keys(db).length) {
       let message = 'ERROR: Not all database tables were found. ' + count + ' of ' + Object.keys(db).length + '\n'
       for (table in db) {
         message += table + ': ' + db[table] + '\n'

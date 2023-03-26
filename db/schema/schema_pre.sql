@@ -6,6 +6,8 @@ DROP TABLE IF EXISTS application_data CASCADE;
 DROP TABLE IF EXISTS contract_cache CASCADE;
 DROP TABLE IF EXISTS transactions CASCADE;
 DROP TABLE IF EXISTS topic CASCADE;
+DROP TABLE profiles;
+DROP TABLE subscriptions;
 
 VACUUM FULL;
 
@@ -44,6 +46,23 @@ CREATE TABLE topic (
   "parent"     integer not null,   -- this is not a hash but an integer id
   "account"    bytea not null      -- an account which was affected by this transaction
 ) PARTITION BY RANGE ("id");
+
+-- subscription based service requires profiles to receive subscriptions
+CREATE TABLE profiles (
+  "id"            serial not null primary key,
+  "status"        varchar not null default 'enabled',
+  "identifier"    varchar unique
+);
+
+CREATE TABLE subscriptions (
+  "id"             serial not null primary key,
+  "profileId"      integer,
+  "enabled"        boolean,
+  "routeHandler"   varchar,
+  "reference"      varchar,
+  "routeMeta"      json, -- blob to be parsed by the routeHandler
+  "deliveryMethod" varchar
+);
 
 COMMIT;
 

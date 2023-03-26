@@ -1,6 +1,17 @@
 const c = require('./common.js');
+const { log, logError } = require('../utils/log')
 
 module.exports = {
+
+  new: async (identifier, status) => {
+    try {
+      const q = 'INSERT INTO profiles ("identifier", "status") VALUES ($1, $2) RETURNING id'
+      const result = await c.query(q, [identifier, status])
+      return result.rows[0].id
+    } catch (error) {
+      logError(error, 'Database Error')
+    }
+  },
 
   all: async () => {
     try {

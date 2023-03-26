@@ -23,6 +23,11 @@ module.exports = {
     return used
   },
 
+  memStatsOneLine: () => {
+    const u = process.memoryUsage()
+    log('memStats: rss: ' + u.rss + ' heapT: ' + u.heapTotal + ' heapU: ' + u.heapUsed + ' ext: ' + u.external + ' buff: ' + u.arrayBuffers ,1)
+  },
+
   execCmd: (cmd, logging = true) => {
     return new Promise((resolve, reject) => {
       exec(cmd, (error, stdout, stderr) => {

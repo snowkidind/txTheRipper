@@ -1,5 +1,6 @@
 const _redis = require('redis')
 const { log, logError } = require('../utils/log')
+const events = require('../utils/events.js')
 
 let client
 
@@ -96,4 +97,36 @@ module.exports = {
       logError(error, 'Database Error')
     }
   },
+
+  publish: async (channel, message) => {
+    try {
+      if (!client) {
+        await connect()
+      }
+      const result = await client.publish(channel, message)
+      if (result === 1) return true
+    } catch (error) {
+      logError(error)
+    }
+  },
+  
+  subscribe: async (channel) => {
+    try {
+      if (!client) {
+        await connect()
+      }
+      const channel1sub = client.duplicate()
+      await channel1sub.connect()
+      await channel1sub.subscribe(channel, (message) => {
+        events.emitMessage('redis:' + channel, message.toString())
+      }, true)
+      return channel1sub
+    } catch (error) {
+      logError(error)
+    }
+  },
+
+  unsubscribe: async (channel, _client) => {
+    await _client.unsubscribe(channel)
+  }
 }

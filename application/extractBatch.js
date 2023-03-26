@@ -5,6 +5,7 @@ const { jobTimer, txutils, dateutils } = require('../utils')
 const { extractTopicsFromInputData } = txutils
 const { start, stop, getId } = jobTimer
 const { timeFmtDb, dateNowBKK } = dateutils
+const router = require('./subscriptions/router.js')
 const { log, logError } = require('../utils/log')
 const { dbAppData } = require('../db')
 
@@ -86,7 +87,7 @@ module.exports = {
         fs.rmSync(baseDir + tmpFiles[i])
       }
       const jobId = getId()
-      log('NOTICE: Extracting transaction details from node with id: ' + jobId, 2)
+      log('NOTICE: Extracting block details from erigon, job: ' + jobId, 2)
       start('Extract Transactions')
       const syncFile = baseDir + jobId + '.json'
       fs.writeFileSync(syncFile, JSON.stringify([]))
@@ -143,9 +144,7 @@ module.exports = {
     const b = provider.send('trace_block', [Number(block)])
     const [blockInfo, tb] = await Promise.all([a, b])
     const [transactions, newContracts, parsedTrace] = extractTopicsFromInputData(tb)
-    
-    // call our external services here
-
+    await router.data([transactions, newContracts, parsedTrace]) // call our external services here
     if (block % 200 === 0) {
       log('Block: ' + blockInfo.number + ': ' + timeFmtDb(Number(blockInfo.timestamp) * 1000) + ' tx: ' + Object.keys(transactions).length + ' newContracts: ' + newContracts.length, 2)
     }
@@ -156,6 +155,6 @@ module.exports = {
       txCount: Object.keys(transactions).length
     }
   }
-
 }
 
+const sleep = (m) => { return new Promise(r => setTimeout(r, m)) }
