@@ -46,6 +46,7 @@ const echoSettings = () => {
   settings += '    sub_suspend_all:'.padEnd(30) + process.env.SUB_SUSPEND_ALL + '\n'
   settings += '    sub_use_unix_socket:'.padEnd(30) + process.env.SUB_USE_UNIX_SOCKET + '\n'
   settings += '    sub_unix_socket:'.padEnd(30) + process.env.SUB_UNIX_SOCKET + '\n'
+  settings += '    sub_use_redis:'.padEnd(30) + process.env.SUB_USE_REDIS + '\n'
   settings += '    sub_type_account:'.padEnd(30) + process.env.SUB_TYPE_ACCOUNT + '\n'
   log(settings, 1)
 }

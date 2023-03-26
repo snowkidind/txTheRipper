@@ -1,8 +1,8 @@
 # txTheRipper - the Ethereum Transaction Indexer
 
-txTheRipper runs alongside your archive node by connecting to its rpc servers websocket to listen for new blocks. When a block is found, it then runs an import program which scans and adds some data for any new transactions. The primary feature of this is looking up transaction history by account. There are some hardware considerations as well as additional storage requirements. 
+txTheRipper runs alongside your Erigon archive node by connecting to its rpc servers websocket to listen for new blocks. When a block is found, it then runs an import program which scans and adds some data for any new transactions. The primary feature of this is looking up transaction history by account. There are some hardware considerations as well as additional storage requirements. 
 
-# subscriptions
+# Subscriptions
 
 Subscribe to get notifications from incoming transactions on an service by service basis. The application provides delivery methods via unix socket and redis pub/sub. The data that is delivered contains
 - the transaction hash
@@ -10,7 +10,6 @@ Subscribe to get notifications from incoming transactions on an service by servi
 - the full trace of the transaction
 
 See the page that is [All about subscriptions](application/subscriptions/SUBSCRIPTIONS.md) 
-
 
 # The structure of the database
 
@@ -176,7 +175,7 @@ node extras/popularLookup.js
 
 ## Software Requirements
 
- - Functional erigon archival node
+ - Functional erigon archival node (might work on others who use the trace_block rpc request)
  - Redis
  - Postgres Database (use tablespaces to assign to a separate drive)
  - NodeJs > 14.9

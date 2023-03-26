@@ -54,7 +54,7 @@ use the clientConfig cli to initialize subscriptions and interact with enabling 
 
 # The subscriptions cli
 
-there is a cli that will help you get started with subscriptions at application/subscriptions/examples/clientConfig.js
+In the application cli, there is a menu which will help you get started with, and manage subscriptions
 
 A profile allows you to create subscriptions to events triggered via the indexer. To use the config tool, first, you must either select or create a profile to attach subscriptions to.
 
