@@ -34,7 +34,7 @@ To globally disable all subscription methods set `SUB_SUSPEND_ALL=false` in orde
 
 Notifications related to subscriptions with the `unix_socket` deliveryMethod are routed to the unix socket when the criteria is matched.
 
-To enable unix socket based subscriptions you must specify the `SUB_USE_UNIX_SOCKET=true` key in .env as well as any particular services to enable such as `SUB_TYPE_ACCOUNT=true` Be sure to specify the same socket your listener will connect to via `SUB_UNIX_SOCKET=/path/to/ripper.sock` With unix sockets, since the socket takes into account who is listening, only notifications related to currently connected listeners will be delivered via the interface. A setListener message must be sent to register your listener via the unix socket. This does not persist over server restarts, and your socket will be discconnected in that case.
+To enable unix socket based subscriptions you must specify the `SUB_USE_UNIX_SOCKET=true` key in .env as well as any particular services to enable such as `SUB_TYPE_ACCOUNT=true` Be sure to specify the same socket your listener will connect to via `SUB_UNIX_SOCKET=/path/to/ripper.sock` With unix sockets, since the socket takes into account who is listening, only notifications related to currently connected listeners will be delivered via the interface. A setListener message must be sent to register your listener via the unix socket. This does not persist over server restarts, and your socket will be disconnected in that case.
 
 See /application/subscriptions/examples for implementation details.
 
@@ -44,9 +44,7 @@ In order to deliver notifications to another script via redis, redis provides a 
   
 Subscriptions with the `redis_mem` deliveryMethod are routed to redis when the criteria is matched.
 
-If you dont have any subscriptions the service is automatically disabled and requires a restart with an enabled subscription in order to allow the service to initialize. 
-
-Since the redis implementation is anonymous, any connection can listen for any event if a subscription exists for it. For instance if an application is tracking an EOA another application may get the subscription and also listen to it. The unix socket provides a more private variation where each listener is required to subscribe before receiving their own notifications
+Since the redis implementation is anonymous, any connection can listen for any event if a subscription exists for it. For instance if an application is tracking an EOA, another application may also listen to the subscription. The unix socket provides a more private variation where each listener is required to subscribe before receiving their own notifications.
 
 Also, to enable redis based subscriptions you must specify the `SUB_USE_REDIS=true` key in .env as well as any particular services to enable such as `SUB_TYPE_ACCOUNT=true`
 

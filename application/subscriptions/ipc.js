@@ -45,7 +45,7 @@ module.exports = {
               return
             }
             const payload = { message: message, profile: profile }
-            events.emitMessage('message', { client: c.id, payload: payload })
+            events.emitMessage('ipc:message', { client: c.id, payload: payload })
           })
           resolve(c)
         })

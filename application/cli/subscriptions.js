@@ -1,4 +1,4 @@
-// example sub 0xc47aaa860008be6f65b58c6c6e02a84e666efe31
+// example sub 0xc47aaa860008be6f65b58c6c6e02a84e666efe31 first tx is 77804
 
 const fs = require('fs')
 const { getAnswer } = require('./common.js')
@@ -66,6 +66,7 @@ module.exports = {
     menu += "  p    show profile\n"
     menu += "  s    Get Subscriptions\n"
     menu += "  +    Add Subscription\n"
+    menu += "  ++   Add Dummy Cryptsy Subscription (starts at 77804)\n"
     menu += "  -    Remove Subscription\n"
     menu += "  d    Disable Subscription\n"
     menu += "  e    Enable Subscription\n"
@@ -96,6 +97,12 @@ module.exports = {
       const account = await getAnswer(rl, 'Account to add: (EOA/address)', mainMenu)
       const deliveryMethod = await getAnswer(rl, 'delivery method: 1. unix_socket, 2. redis_mem', mainMenu)
       await dbSubscriptions.add(profile.id, 'accounts', account, { type: 'all' }, deliveryMethods[deliveryMethod])
+    }
+
+    else if (query === "++") {
+      const account = '0xc47aaa860008be6f65b58c6c6e02a84e666efe31'
+      await dbSubscriptions.add(profile.id, 'accounts', account, { type: 'all' }, 'unix_socket')
+      await dbSubscriptions.add(profile.id, 'accounts', account, { type: 'all' }, 'redis_mem')
     }
 
     else if (query === "-") {

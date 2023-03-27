@@ -13,6 +13,7 @@ const { system } = require('../../utils')
 const { dbAppData } = require('../../db')
 const { log, logError, clearLog } = require('../../utils/log')
 const subscriptions = require('./subscriptions.js')
+const exportData = require('./exportData.js')
 
 const mainMenu = async () => {
 
@@ -24,6 +25,7 @@ const mainMenu = async () => {
   menu += "  p    Pause the application, currently: " + pause + "\n"
   menu += "  u    Unpause the application\n"
   menu += "  xl   Clear log file\n"
+  menu += "  ex   Export data menu\n"
   menu += "  q    Exit\n\n"
   menu += "  Enter a command:\n "
 
@@ -81,6 +83,11 @@ const mainMenu = async () => {
     if (execute === 'y') {
       clearLog()
     }
+  }
+  
+  else if (query === "ex") {
+    await exportData.mainMenu(rl)
+    return
   }
 
   else if (query === "q") {

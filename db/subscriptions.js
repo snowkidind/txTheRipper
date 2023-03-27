@@ -3,6 +3,25 @@ const { log, logError } = require('../utils/log')
 
 module.exports = {
   
+  getAllEnabled: async (routeHandler) => {
+    try {
+      // this q also ensures the user is not disabled
+      const q = `
+      SELECT s."id", s."profileId", s."enabled", s."routeHandler", s."reference", s."routeMeta", s."deliveryMethod", p."status" 
+      FROM subscriptions s 
+      INNER JOIN profiles p 
+      ON s."profileId" = p.id 
+      AND s."routeHandler" = $1 
+      AND s."enabled" = true 
+      AND p."status" = 'enabled';
+      `
+      const result = await c.query(q, [routeHandler])
+      return result.rows
+    } catch (error) {
+      logError(error, 'Database Error')
+    }
+  },
+
   getAll: async (routeHandler, deliveryMethod) => {
     try {
       // this q also ensures the user is not disabled

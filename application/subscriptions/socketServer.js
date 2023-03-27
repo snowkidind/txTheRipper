@@ -3,7 +3,6 @@ const fs = require('fs')
 env(__dirname + '/../../.env')
 const ipc = require('./ipc.js')
 const events = require('../../utils/events.js')
-const { dbSubscriptions, dbAppData } = require('../../db')
 const { log, logError } = require('../../utils/log')
 
 const listeners = []
@@ -21,7 +20,7 @@ const listeners = []
 
   With unix sockets, since the socket takes into account who is listening, only notifications related
   to currently connected listeners will be delivered via the interface. A setListener message must be 
-  sent to register your listener via the unix socket. This does not persist over server restarts, and 
+  sent to register your listener once via the unix socket. This does not persist over server restarts, and 
   your socket will be discconnected in that case.
   
   See /application/subscriptions/examples for implementation details.
@@ -41,66 +40,27 @@ const routeEvent = async (request) => {
   if (payload.message.type === 'setListener') {
     log('Subscriptions: New Client Listener:' + client + ' profile: ' + payload.profile.identifier, 1)
     listeners.push({ client: client, id: payload.profile.id })
+    const id = typeof payload.message.id === 'undefined' ? -1 : payload.message.id // mirror id param if sent
     ipc.sendMessage(client, {
       response: 'listenerSet',
       profile: payload.profile,
-      id: payload.message.id,
+      id: id,
       type: payload.message.type
     })
   }
   return false
 }
 
-/* 
-  Refresh database information  every 10s TODO improve
-*/
-const pollAccountSubs = async () => {
-  acctSubs = await dbSubscriptions.getAll('accounts', 'unix_socket')
-  setTimeout(pollAccountSubs, 10000)
-}
-
-/* 
-  determine a user is subscribed to a particular route
-*/
-let acctSubs
-const hasAccountsSub = (profileId, route, account) => {
-  let found = false
-  acctSubs.forEach((s) => {
-    if (s.profileId === profileId && s.routeHandler === route && s.reference === account) {
-      found = true
-    }
-  })
-  return found
-}
-
 (async () => {
   try {
-    await pollAccountSubs() // TODO improve method to keep subs up to date
-    events.emitter.on('message', async (payload) => {
+    events.emitter.on('ipc:message', async (payload) => { // handle setListener event
       await routeEvent(payload)
     })
     if (fs.existsSync(process.env.SUB_UNIX_SOCKET)) fs.rmSync(process.env.SUB_UNIX_SOCKET) // kill old socket on sight
-    
-    // Create a new socket server.
-    ipc.newServer(process.env.SUB_UNIX_SOCKET)
-
-    // When a event is received, see fi a listener exists for the event and forward if a match is found
-    events.emitter.on('subs:accounts', (txInfo) => { // parse incoming stream of data
-
-      // A listener is a connected client, these are removed when a client disconnects
+    ipc.newServer(process.env.SUB_UNIX_SOCKET) // Create a new socket server.
+    events.emitter.on('outgoing:socket', (message) => { // send message to associated client
       listeners.forEach((l) => {
-        const [hash, topics, trace] = txInfo
-        topics.forEach((topic) => { // search the data for matching entries and forward as needed
-          if (hasAccountsSub(l.id, 'accounts', topic)) {
-            log('SubsMatch: ' + hash + ' -> ' + l.id )
-            ipc.sendMessage(l.client, {
-              hash: hash,
-              topics: Array.from(topics),
-              trace: trace,
-              type: 'accounts'
-            })
-          }
-        })
+        if (l.id === message.profileId) ipc.sendMessage(l.client, message)
       })
     })
   } catch (error) {

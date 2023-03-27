@@ -11,7 +11,8 @@ const identifier = 'AccountSniffer'
 */
 
 client = net.createConnection({ path: process.env.SUB_UNIX_SOCKET }, () => {
-  const config = { identifier: identifier, type: 'setListener', id: randomString(8) } // do we still need the id param?
+  // in more complex cases you might want to add an id which is returned in the response, ok to omit
+  const config = { identifier: identifier, type: 'setListener', id: randomString(8) } 
   client.write(JSON.stringify(config))
 })
 

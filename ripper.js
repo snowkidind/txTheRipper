@@ -90,6 +90,11 @@ const init = async () => {
 
   const indexCacheDisable = process.env.INDEX_CACHE_DISABLE || 'false'
   if (indexCacheDisable === 'false') {
+
+    // TODO if the database is getting kick started, there MUST be a sql file that 
+    // contains these entries.It is to be loaded in first. Fail if the file is not found. 
+    // If not the following should occur second, which generates everything from scratch:
+
     const accountsFile = popularDir + 'topAccts.json'
     let generate = false
     if (fs.existsSync(accountsFile)) { // double check there is at least an entry in accountsFile
@@ -107,8 +112,15 @@ const init = async () => {
       log('to check on progress, observe /derived/application/log', 1)
       await system.execCmd(process.env.EXEC_NODE + ' ' + process.env.BASEPATH + 'extras/popularContracts.js')
     }
+    await dbInit.assignPopularAddresses() // establish the contract cache
   }
-  await dbInit.assignPopularAddresses() // establish the contract cache
+
+  // TODO: If the index cache was successsfully installed, it is now safe to start installing numbered sql files 
+  // from the kickstart package. After each page is loaded into sql, update application settings until all 
+  // kickstart files are loaded. These are linked to the index cache added above and must not be modified in any way
+  // Once the stage of installing these files has begun there should be a database flag to infer load in is occurring
+  // and to pause further sync operations until loadin is complete. Once complete, this code shouldnt run again.
+
   await subscriptionRouter.init()
 }
 
