@@ -4,13 +4,15 @@ const ethers = require('ethers')
 const fs = require('fs')
 const WebSocket = require('ws')
 
-const { dbInit, dbAppData } = require('./db')
+const { dbInit, dbAppData, dbContractCache } = require('./db')
 const { system, events, jobTimer } = require('./utils')
 const { start, stop, getId } = jobTimer
 const { log, printLogo, logError } = require('./utils/log')
 
 const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_NODE, 1)
 let wsProvider
+let kickstart = false // import downloaded data
+let kickstartPath
 
 const application = require('./application/sync.js')
 const popularDir = process.env.BASEPATH + '/derived/popular/'
@@ -90,11 +92,9 @@ const init = async () => {
 
   const indexCacheDisable = process.env.INDEX_CACHE_DISABLE || 'false'
   if (indexCacheDisable === 'false') {
-
-    // TODO if the database is getting kick started, there MUST be a sql file that 
-    // contains these entries.It is to be loaded in first. Fail if the file is not found. 
-    // If not the following should occur second, which generates everything from scratch:
-
+    if (kickstart) {
+      await kickstartCache(kickstartPath)
+    }
     const accountsFile = popularDir + 'topAccts.json'
     let generate = false
     if (fs.existsSync(accountsFile)) { // double check there is at least an entry in accountsFile
@@ -114,13 +114,9 @@ const init = async () => {
     }
     await dbInit.assignPopularAddresses() // establish the contract cache
   }
-
-  // TODO: If the index cache was successsfully installed, it is now safe to start installing numbered sql files 
-  // from the kickstart package. After each page is loaded into sql, update application settings until all 
-  // kickstart files are loaded. These are linked to the index cache added above and must not be modified in any way
-  // Once the stage of installing these files has begun there should be a database flag to infer load in is occurring
-  // and to pause further sync operations until loadin is complete. Once complete, this code shouldnt run again.
-
+  if (kickstart) {
+    await kickstartData(kickstartPath)
+  }
   await subscriptionRouter.init()
 }
 
@@ -207,6 +203,69 @@ const setUpWsProviderAndGo = async () => {
   })
 } 
 
+
+// Expectations: the sql file is not corrupt 
+//               the file contains the exact amount of entries used to create chaindata
+const kickstartCache = async (kickstartPath) => {
+  const cacheAdded = dbAppData.getBool('kickstart:cache')
+  if (cacheAdded === false) { // and not undefined
+    log('kickstart: previously there was an error adding contract cache. Probably need to nuke and start over.', 1)
+    process.exit(1)
+  }
+  const size = await dbContractCache.cacheSize() // nonzero chance that the user continues to set the flag
+  if (size > 0) {
+    log('kickstart: The contract cache was previously initialized.', 1)
+    return
+  }
+  try {
+    log('kickstart: initializing the index_cache', 1)
+    await system.execCmd('psql -d ' + process.env.DB_NAME + ' -f ' + kickstartPath + '/index_cache.sql')
+    await dbAppData.setBool('kickstart:cache', true)
+  } catch (error) {
+    await dbAppData.setBool('kickstart:cache', false)
+    logError(error)
+    log('The sql command to add the contract cache from the kickstart folder failed. Might need to nuke the db.')
+  }
+}
+
+const kickstartData = async (kickstartPath) => {
+  const kickstartedData = await dbAppData.getBool('kickstart:data')
+  if (kickstartedData === true) {
+    log('NOTICE: App has been successfully kickstarted. Please remove the kickstart arguments from the command line.')
+    process.exit()
+  }
+  await dbAppData.setBool('kickstart:data', false)
+  const dir = await fs.readdirSync(kickstartPath)
+  const sorter = []
+  let imported = await dbAppData.getInt('kickstart:import')
+  if (typeof imported === 'undefined') imported = 0
+  dir.forEach((file) => {
+    if (file.includes('_blocks.sql')) {
+      const fileNum = Number(file.replace('_blocks.sql', ''))
+      if (fileNum > imported) {
+        sorter.push(fileNum)
+      }
+    }
+  })
+  const sorted = sorter.sort((a, b) => { return a > b ? 1 : -1 })
+
+  for (let i = 0; i < sorted.length; i++) {
+    const file = kickstartPath + '/' + String(sorted[i]) + '_blocks.sql'
+    try {
+      log('Loading in kickstarter file: ' + file, 1)
+      await system.execCmd('psql -d ' + process.env.DB_NAME + ' -f ' + file)
+      await dbAppData.setInt('kickstart:import', sorted[i])
+      await dbAppData.setInt('block_sync', sorted[i])
+      await dbAppData.setInt('last_block_scanned', sorted[i])
+      await sleep(500)
+      if (i === sorted.length - 1) await dbAppData.setBool('kickstart:data', true)
+    } catch (error) {
+      logError(error)
+      log('The sql command to add the transaction info from the kickstart folder failed. Might need to nuke the db.')
+    }
+  }
+}
+
 ;(async () => {
   try {
     start('Main Application')
@@ -225,8 +284,37 @@ const setUpWsProviderAndGo = async () => {
     })
     let found = false
     for (let i = 2; i < process.argv.length; i++) {
-      if (process.argv[i] === 'cli' || process.argv[i] === 'i') {
+      if (process.argv[i] === 'cli' || process.argv[i] === '-cli' || process.argv[i] === '--cli' || process.argv[i] === 'i') {
         found = true
+      } else if (process.argv[i] === '--k' || process.argv[i] === '-k' || process.argv[i] === 'k') {
+        // kickstart. it is expected that the database has not been initialized here
+        if (typeof process.argv[i + 1] !== 'undefined') { 
+          if (await fs.existsSync(process.argv[i + 1])) {
+            const dir = await fs.readdirSync(process.argv[i + 1])
+            if (dir.length > 2) {
+              let checks = 0
+              dir.forEach((file) => {
+                if (file === 'index_cache.sql') checks += 1
+                if (file.includes('_blocks.sql')) checks += 1
+              })
+              if (checks < 2) {
+                log('Attempting to kickstart but the directory supplied did not pass the checks.', 1)
+                log('There must be at minimum two files within: index_cache.sql and 0_blocks.sql', 1)
+                process.exit(1)
+              }
+              const indexCacheDisable = process.env.INDEX_CACHE_DISABLE || 'false'
+              if (indexCacheDisable === 'true') {
+                log('In order to kickstart you must set .env.INDEX_CACHE_DISABLE=false', 1)
+                process.exit(1)
+              }
+              kickstart = true
+              kickstartPath = process.argv[i + 1]
+            } else {
+              log('Attempting to kickstart but the directory supplied does not appear to be valid.', 1)
+              process.exit()
+            }
+          }
+        }
       }
     }
     await init()

@@ -11,6 +11,22 @@ Subscribe to get notifications from incoming transactions on an service by servi
 
 See the page that is [All about subscriptions](application/subscriptions/SUBSCRIPTIONS.md) 
 
+# Kickstarting the sync
+
+You can backup your own sync via pg_dump (if you have the resource) or you can copy the files in the tablespace. Additionally you can export the data to sql files which the program can read upon a fresh database installation. 
+
+Retrieving block data and indexing the cache for millions of blocks can be a time consuming process. This is a way to kickstart the database, that is to import chain data and cache for up to a certain block height. (data availibility may vary as a function of funding.) To enable kickstarting, on a clean database, (use the nuke database function in the cli) argue
+
+```
+node ripper.js k /path/to/kickstartdir
+```
+
+This will begin the process of installing sql files found in the kickstart directory. Once the kickstart process is complete, it is safe to remove files in the kickstart directory or just save them as a backup.
+
+For the sake of future compatibility there is a built in export functionality for this purpose. Instead of exporting the entire database, "generations" based on block height and the highest found export file are exported. Additionally the index_cache.sql file MUST be the exact file used to export the data, that is the exported chain data works in tandem with the index cache.
+
+Note that if the index cache table is modified, an entire database export will be required based on the modified cache file.
+
 # The structure of the database
 
 The data is imported to two postgresql tables: "transactions", and "topic"  For each transaction received, any accounts scraped from the transaction will be added as a row in the topic table. 

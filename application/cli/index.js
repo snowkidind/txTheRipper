@@ -11,6 +11,7 @@ const fs = require('fs')
 const { getAnswer } = require('./common.js')
 const { system } = require('../../utils')
 const { dbAppData } = require('../../db')
+const auditor = require('../../extras/auditUtils.js')
 const { log, logError, clearLog } = require('../../utils/log')
 const subscriptions = require('./subscriptions.js')
 const exportData = require('./exportData.js')
@@ -24,6 +25,8 @@ const mainMenu = async () => {
   menu += "  n    Nuke the database\n"
   menu += "  p    Pause the application, currently: " + pause + "\n"
   menu += "  u    Unpause the application\n"
+  menu += "  ab   Audit a single block\n"
+  menu += "  ar   Audit a block range\n"
   menu += "  xl   Clear log file\n"
   menu += "  ex   Export data menu\n"
   menu += "  q    Exit\n\n"
@@ -76,6 +79,19 @@ const mainMenu = async () => {
       rl.close()
       process.exit()
     }
+  }
+
+  else if (query === "ab") {
+    const block = await getAnswer(rl, 'Enter block to audit', mainMenu)
+    const audit = await auditor.auditBlock(block)
+    console.log(audit.acc)
+    console.log('Pass: ' + audit.pass)
+  }
+
+  else if (query === "ar") {
+    const lowBlock = await getAnswer(rl, 'Enter Low Block', mainMenu)
+    const highBlock = await getAnswer(rl, 'Enter High Block', mainMenu)
+    await auditor.auditRange(lowBlock, highBlock)
   }
 
   else if (query === "xl") {

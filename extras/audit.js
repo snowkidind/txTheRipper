@@ -9,6 +9,7 @@ const { start, stop, getId } = jobTimer
 const { log, logError } = require('../utils/log')
 const { dbAppData, dbTransactions, dbTopic, dbCommon, dbContractCache } = require('../db')
 const { processBlock } = require('../application/extractBatch')
+const { auditBlock } = require('./auditUtils.js')
 
 /* 
   Audit.js:
@@ -18,63 +19,6 @@ const { processBlock } = require('../application/extractBatch')
 */
 const noIndexMax = 4000000
 
-const auditBlock = async (blockHeight) => {
-  const blockNode = await provider.getBlock(Number(blockHeight))
-  const blockInfo = await await processBlock(blockHeight)
-  if (blockNode.transactions.length !== blockInfo.txCount ||
-    blockNode.transactions.length !== Object.keys(blockInfo.transactions).length) {
-    console.log('WARNING: Node txns length dont match DB txs.')
-  }
-  console.log('\nAudit Summary for block: ' + blockHeight)
-  if (blockInfo.txCount == 0) {
-    console.log('There are no transactions to audit for this block.')
-    return
-  }
-  let pass = true
-  for (hash in blockInfo.transactions) {
-    console.log()
-    const nodeSet = blockInfo.transactions[hash]
-    console.log('https://etherscan.io/tx/' + hash)
-    console.log('\n  NodeInfo:')
-    for (account of nodeSet) {
-      console.log('    ' + account)
-    }
-    console.log()
-    const headers = await dbTransactions.getTransactionHeaders(hash)
-    const topics = await dbTopic.getTopicsForParent(headers[0].id)
-    console.log('  Database Info:')
-    topics.forEach((t) => {
-      console.log('    ' + t.account)
-    })
-    if (headers.length > 1) {
-      console.log('WARNING: found more than one transaction with matching hash.')
-      pass = false
-    }
-    if (nodeSet.size !== topics.length) {
-      console.log('WARNING: Arrays are not the same length.')
-      pass = false
-    }
-    topics.forEach((t) => {
-      let found = false
-      for (account of nodeSet) {
-        if (t.account !== account) {
-          found = true
-        }
-      }
-      if (!found) {
-        console.log('WARNING: Couldnt find a matching transaction.')
-        pass = false
-      }
-    })
-
-    console.log()
-  }
-  if (pass) {
-    console.log('NOTICE: This block passed the tests')
-  } else {
-    console.log('NOTICE: This block didnt pass the tests')
-  }
-}
 
 
 ;(async () => {
