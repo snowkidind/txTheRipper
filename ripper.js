@@ -92,7 +92,7 @@ const init = async () => {
 
   const indexCacheDisable = process.env.INDEX_CACHE_DISABLE || 'false'
   if (indexCacheDisable === 'false') {
-    if (kickstart) {
+    if (kickstart === true) {
       await kickstartCache(kickstartPath)
     }
     const accountsFile = popularDir + 'topAccts.json'
@@ -114,7 +114,7 @@ const init = async () => {
     }
     await dbInit.assignPopularAddresses() // establish the contract cache
   }
-  if (kickstart) {
+  if (kickstart === true) {
     await kickstartData(kickstartPath)
   }
   await subscriptionRouter.init()
@@ -248,7 +248,6 @@ const kickstartData = async (kickstartPath) => {
     }
   })
   const sorted = sorter.sort((a, b) => { return a > b ? 1 : -1 })
-
   for (let i = 0; i < sorted.length; i++) {
     const file = kickstartPath + '/' + String(sorted[i]) + '_blocks.sql'
     try {
