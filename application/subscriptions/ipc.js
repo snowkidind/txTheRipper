@@ -41,7 +41,7 @@ module.exports = {
             }
             const profile = await dbProfiles.getByIdentifier(message.identifier)
             if (typeof profile === 'undefined') {
-              await module.exports.sendMessage(message.client, { error: 'profile for identifier is missing' }, true)
+              module.exports.sendMessage(message.client, { error: 'profile for identifier is missing' }, true)
               return
             }
             const payload = { message: message, profile: profile }
