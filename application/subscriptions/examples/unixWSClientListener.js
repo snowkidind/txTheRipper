@@ -1,8 +1,8 @@
 const env = require('node-env-file')
 const fs = require('fs')
-env(__dirname + '/../../../../.env')
+env(__dirname + '/../../../.env')
 
-const { randomString } = require('../../../../utils/system.js')
+const { randomString } = require('../../../utils/system.js')
 const net = require('net')
 const identifier = 'AccountSniffer'
 

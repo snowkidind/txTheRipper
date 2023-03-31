@@ -1,8 +1,8 @@
 const env = require('node-env-file')
-env(__dirname + '/../../../../.env')
+env(__dirname + '/../../../.env')
 
-const { dbRedis, dbProfiles, dbSubscriptions } = require('../../../../db')
-const events = require('../../../../utils/events.js')
+const { dbRedis, dbProfiles, dbSubscriptions } = require('../../../db')
+const events = require('../../../utils/events.js')
 const identifier = 'AccountSniffer'
 
 const prefix = 'ripper:accounts:'
