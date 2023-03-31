@@ -36,6 +36,7 @@ const cleanupSync = async () => {
 module.exports = {
 
   synchronize: async (blockHeight) => {
+   
     const inJob = await dbAppData.getBool('working')
     if (inJob === true) {
       return 'ok'

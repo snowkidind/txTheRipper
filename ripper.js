@@ -81,6 +81,14 @@ const init = async () => {
   }
 
   await fs.writeFileSync(procStore, String(process.pid))
+
+  // Under normal circumstance reset stop flags and continue
+  const devFlagDisable = process.env.DEV_STOP_FLAGS_ENABLE === 'true' ? false : true
+  if (devFlagDisable) {
+   await dbAppData.markUnPaused()
+   await dbAppData.setBool('working', false)
+  }
+
   await dbInit.initTables() // ensure basic tables exist
   await dbInit.initApplicationDefaults()
   if (await dbAppData.getBool('init') !== true) { // must happen after table inits
@@ -321,6 +329,11 @@ const kickstartData = async (kickstartPath) => {
     const pause = await dbAppData.pauseStatus()
     if (pause) {
       log('NOTICE: >>>>>>> Main: Pause flag detected <<<<<< Entering interactive mode.', 1)
+      found = true
+    }
+    const inJob = await dbAppData.getBool('working')
+    if (inJob === true) {
+      log('NOTICE: >>>>>>> Main: Working flag detected <<<<<< Entering interactive mode.', 1)
       found = true
     }
     events.emitter.on('close', async (source) => {

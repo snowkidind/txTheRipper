@@ -328,7 +328,7 @@ DONT_INDEX=true
 ```
 
 [subscriptions]
-(Work in progress) The subscriptions module allows events to be either broadcasted via redis or unix socket. During the indexing of a block, which the trace is being read it allows the program to efficiently deliver notifications about such events. In the future a rest server will be built on the unix socket to allow for external use of the api. You can use both connection methods but because of sandboxing it will take up double the resources which may matter when subscribed to many accounts, so its recommended to use one or the other message delivery methods.
+(Work in progress) The subscriptions module allows events to be either broadcasted via redis or unix socket. During the indexing of a block, which the trace is being read it allows the program to efficiently deliver notifications about such events. In the future a rest server will be built on the unix socket to allow for external use of the api. 
 
 ```
 SUB_SUSPEND_ALL=false
