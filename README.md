@@ -31,9 +31,9 @@ See the page that is [All about subscriptions](application/subscriptions/SUBSCRI
 
 # Kickstarting the sync
 
-Retrieving block data and indexing the cache for millions of blocks can be a time consuming process. Kickstarting the database, imports chain data and index cache for up to a certain block height. (data availibility may vary as a function of funding.) 
+Retrieving block data and indexing the cache for millions of blocks can be a time consuming process. To save time, you can Kickstart the database: Import chain data and index cache for the historical data. (data availibility may vary as a function of funding.) 
 
-You can export your own txTheRipper data to sql files which the program can read upon a fresh database installation. Alternatively, you can backup your own sync via pg_dump (if you have the resource) or you can copy the files from the tablespace.  
+You can import downloaded database files, and also may export your own txTheRipper data to sql files which the program can read upon a fresh database installation. Alternatively, you can backup your own sync via pg_dump (if you have the resource) or you can copy the files from the tablespace.  
 
 To enable kickstarting, on a clean database, (use the nuke database function in the cli) argue:
 
