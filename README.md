@@ -13,7 +13,7 @@ Both modes operate using a deterministic, sequential method. Each must be establ
 
 # sync mode
 
-The sync method will synchronize data for all blocks, which takes days to get the full database rolling. (Alternatively, there is a kickstarting method) The subscription method will synchronize to the latest block, minus the confirmations setting, on its first run, and on subsequent runs, will synchronize to the block height from the previous run. Once the subscription method starts, no subsequent blocks will be missed, even through application downtime or restarts. The services from subscription mode (below) are also available during the sync mode. All notifications from subscriptions will coorelate to the height the database sync is currently.
+The sync method will synchronize data for all blocks, which takes days to get the full database rolling. (Alternatively, there is a kickstarting method) Since a historical database is being created, sync must begin from the first blocks containing transactions on the chain, and continue tracing all transactions until the highest recent block.  All services from subscription mode are available when the program is set to sync mode, except that during the initial sync subscription mode will alert for information on the current block sync height, for the entirety of the blockchain history.
 
 # subscription mode
 
@@ -24,6 +24,8 @@ Subscribe to get notifications from incoming transactions on an service by servi
 - the full trace of the transaction
 
 In subscription mode, the database is not used to store any information. However, the latest block height and other application data is stored to deterministically find the sync point, over application restarts.
+
+The subscription method will synchronize to the latest block, minus the confirmations setting, on its first run, and on subsequent runs, will synchronize to the block height from the previous run. Once the subscription method starts, no subsequent blocks will be missed, even through application downtime or restarts. The services from subscription mode (below) are also available during the sync mode. All notifications from subscriptions will coorelate to the height the database sync is currently.
 
 See the page that is [All about subscriptions](application/subscriptions/SUBSCRIPTIONS.md)
 
