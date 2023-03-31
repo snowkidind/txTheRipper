@@ -41,7 +41,7 @@ const routeEvent = async (request) => {
     log('Subscriptions: New Client Listener:' + client + ' profile: ' + payload.profile.identifier, 1)
     listeners.push({ client: client, id: payload.profile.id })
     const id = typeof payload.message.id === 'undefined' ? -1 : payload.message.id // mirror id param if sent
-    ipc.sendMessage(client, {
+    await ipc.sendMessage(client, {
       response: 'listenerSet',
       profile: payload.profile,
       id: id,

@@ -10,6 +10,8 @@ const identifier = 'AccountSniffer'
   Example application listen for events related to subscriptions
 */
 
+let buffer = ''
+
 client = net.createConnection({ path: process.env.SUB_UNIX_SOCKET }, () => {
   // in more complex cases you might want to add an id which is returned in the response, ok to omit
   const config = { identifier: identifier, type: 'setListener', id: randomString(8) } 
@@ -18,11 +20,18 @@ client = net.createConnection({ path: process.env.SUB_UNIX_SOCKET }, () => {
 
 client.on('data', (data) => {
   try {
-    const queries = data.toString().split('\n')
+    buffer += data.toString()
+    const queries = buffer.split('\n')
+    buffer = queries.pop()
     for (let i = 0; i < queries.length; i++) {
       if (queries[i].length > 0) {
-        const info = JSON.parse(queries[i])
-        console.log(info)
+        try {
+          const info = JSON.parse(queries[i])     
+          console.log('Got Something ' + typeof info)
+        } catch (error) {
+          console.log('Missed Something')
+          console.log(queries[i])
+        }
       }
     }
   } catch (error) {
