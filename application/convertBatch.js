@@ -12,6 +12,9 @@ const useRedisData = process.env.USE_REDIS_DATA === 'true' ? true : false
 module.exports = {
   convertBatchAccounts: async (jobId, _data) => {
     try {
+      if (process.env.OPERATION_MODE === 'subscription') {
+        return
+      }
       const pause = await dbAppData.pauseStatus()
       if (pause) {
         log('NOTICE: >>>>>>> Convert batch: Pause flag detected <<<<<< Will Exit at end of this cycle.', 1)
@@ -103,12 +106,10 @@ module.exports = {
         await finalize(batchJsonFile, beforestats.size)
         return jsonOut
       } else {
-        let matches = 0
         for (let i = 0; i < addressCache.length; i++) {
           for (let j = 0; j < json.length; j++) {
             for (let k = 0; k < json[j].topics.length; k++) {
               if (addressCache[i].account === json[j].topics[k]) {
-                matches += 1
                 // console.log('Match: ' + addressCache[i].account + ' ' + json[j].topics[k] + ' -> ' + addressCache[i].byteId)
                 json[j].topics[k] = addressCache[i].byteId
               }

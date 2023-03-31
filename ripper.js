@@ -25,6 +25,15 @@ const initialInit = async () => {
   await dbInit.initFunctions()
   await dbAppData.setBool('init', true)
   await dbAppData.setBool('working', false)
+  if (process.env.OPERATION_MODE === 'subscription') {
+    log('NOTICE: Subscription mode enabled. Archive data will not be available.')
+    const block = await provider.getBlockNumber()
+    const confirmations = Number(process.env.CONFIRMATIONS) || 20
+    await dbAppData.setInt('block_sync', block - confirmations)
+    await dbAppData.setString('mode', 'subscription')
+  } else {
+    await dbAppData.setString('mode', 'sync')
+  }
 }
 
 const echoSettings = () => {
@@ -82,22 +91,27 @@ const init = async () => {
 
   await fs.writeFileSync(procStore, String(process.pid))
 
-  // Under normal circumstance reset stop flags and continue
-  const devFlagDisable = process.env.DEV_STOP_FLAGS_ENABLE === 'true' ? false : true
-  if (devFlagDisable) {
-   await dbAppData.markUnPaused()
-   await dbAppData.setBool('working', false)
-  }
-
   await dbInit.initTables() // ensure basic tables exist
   await dbInit.initApplicationDefaults()
+
+  // Note once you set the mode of the application you are not allowed to modify it, at the cost of nuking the database.
+  const mode = await dbAppData.getString('mode')
+  const modeEnv = process.env.OPERATION_MODE === 'subscription' ? 'subscription' : 'sync'
+  if ((mode === 'subscription' && modeEnv !== 'subscription') || (mode === 'sync' && modeEnv !== 'sync')) {
+    let message = 'ERROR: \n\nThe Operation mode in the environment does not match the mode \"' + mode + '\", which was set previously. Process cannot continue, Exiting.\n\n'
+    message += '     To operate in sync mode, reset the database and set env.OPERATION_MODE=sync\n'
+    message += '     To operate in subscription mode, reset the database and set env.OPERATION_MODE=subscription\n'
+    message += '     To continue operating in ' + mode + ' mode, set env.OPERATION_MODE' + mode + '\n\n'
+    message += '     -> To resolve, open cli directly: node application/cli/index.js and \"Nuke the database\" after fixing .env\n\n'
+    log(message, 1)
+    process.exit(1)
+  }
+
   if (await dbAppData.getBool('init') !== true) { // must happen after table inits
     await initialInit()
   }
-
   const blockHeight = await provider.getBlockNumber() 
   await dbInit.initPartitions(blockHeight) // ensure enough partitions to proceed
-
   const indexCacheDisable = process.env.INDEX_CACHE_DISABLE || 'false'
   if (indexCacheDisable === 'false') {
     if (kickstart === true) {
@@ -126,6 +140,12 @@ const init = async () => {
     await kickstartData(kickstartPath)
   }
   await subscriptionRouter.init()
+  // Under normal circumstance reset stop flags and continue
+  const devFlagDisable = process.env.DEV_STOP_FLAGS_ENABLE === 'true' ? false : true
+  if (devFlagDisable) {
+    await dbAppData.markUnPaused()
+    await dbAppData.setBool('working', false)
+  }
 }
 
 const sleep = (m) => { return new Promise(r => setTimeout(r, m)) }

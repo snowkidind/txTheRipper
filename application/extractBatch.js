@@ -95,6 +95,7 @@ module.exports = {
       let blocksProcessed = 0
       const theTop = blockHeight - confirmations
       let lastBlockProcessed
+      let blockRef
       for (let block = startBlock; block <= theTop; block++) {
         lastBlockProcessed = block
         const txInfo = await module.exports.processBlock(block)
@@ -122,11 +123,12 @@ module.exports = {
             return [jobId, txQueue]
           }
         }
+        blockRef = block
       }
       // If you passed this it means the project is inSync
       if (typeof lastBlockProcessed !== 'undefined') {
         if (useRam) {
-          result = await commitMem(block)
+          result = await commitMem(blockRef)
         } else {
           await commit(syncFile, lastBlockProcessed)
         }

@@ -1,5 +1,3 @@
-const ethers = require('ethers')
-const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_NODE, 1)
 const { log } = require('../utils/log')
 const { events, jobTimer } = require('../utils/')
 const { start, stop } = jobTimer

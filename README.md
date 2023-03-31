@@ -9,13 +9,24 @@ Subscribe to get notifications from incoming transactions on an service by servi
 - topics (accounts) this includes all types of calls and accounts harvested from input data
 - the full trace of the transaction
 
-See the page that is [All about subscriptions](application/subscriptions/SUBSCRIPTIONS.md) 
+See the page that is [All about subscriptions](application/subscriptions/SUBSCRIPTIONS.md)
+
+# Operation Modes
+
+There are two modes of operation for txTheRipper: `sync` and `subscription`.
+
+- sync parses all blocks and adds the transaction information to the database. It also provides the subscription interface.
+- subscription does not save anything to the database. (besides application settings) This provides only the subscription interface
+
+Both modes operate in a sequential method and must be established on a fresh database, and cannot be changed without resetting the database to zero. The sync method will synchronize data for all blocks which takes days to get the full database rolling. The subscription method will synchronize to the latest block at first, and on subsequent runs, will synchronize to whatever it got to on previous runs. Once the subscription method starts, no subsequent blocks will be missed, even through application downtime or restarts.
 
 # Kickstarting the sync
 
 You can backup your own sync via pg_dump (if you have the resource) or you can copy the files in the tablespace. Additionally you can export the data to sql files which the program can read upon a fresh database installation. 
 
-Retrieving block data and indexing the cache for millions of blocks can be a time consuming process. This is a way to kickstart the database, that is to import chain data and cache for up to a certain block height. (data availibility may vary as a function of funding.) To enable kickstarting, on a clean database, (use the nuke database function in the cli) argue
+Retrieving block data and indexing the cache for millions of blocks can be a time consuming process. This is a way to kickstart the database, that is to import chain data and cache for up to a certain block height. (data availibility may vary as a function of funding.) 
+
+To enable kickstarting, on a clean database, (use the nuke database function in the cli) argue:
 
 ```
 node ripper.js k /path/to/kickstartdir
@@ -278,6 +289,14 @@ In order to prevent reorgs from corrupting the data, keep this back about 20 blo
 
 ```
 CONFIRMATIONS=20
+```
+
+The mode is based on your application. For a "Full Archive" sync of the database, that is,
+to process each block and save transaction and topics data to a database, select "sync". 
+to process each block and only provide subscription services select "subscription"
+
+```
+OPERATION_MODE=sync
 ```
 
 [Memory Usage]

@@ -12,7 +12,7 @@ module.exports = {
     log('NOTICE: Updating Application Data with batch information', 2)
     const batchJsonFile = baseDir + jobId + '.json'
     const batchSqlFile = baseDir + jobId + '.sql'
-    if (success === true) { 
+    if (success === true || process.env.OPERATION_MODE === 'subscription') { 
       const lastScanned = await dbAppData.getInt('last_block_scanned') // Read Node but potentially not loaded in
       await dbAppData.setInt('block_sync', lastScanned) 
       if (fs.existsSync(batchJsonFile)) fs.rmSync(batchJsonFile)

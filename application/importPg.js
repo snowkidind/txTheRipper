@@ -34,7 +34,9 @@ const addDb = (fileToRead) => {
 
 module.exports = {
   importTransactionsToPg: async (jobId, _data) => {
-
+    if (process.env.OPERATION_MODE === 'subscription') {
+      return
+    }
     const pause = await dbAppData.pauseStatus()
     if (pause) {
       log('NOTICE: >>>>>>> Import Pg: Pause flag detected <<<<<< Will Exit at end of this cycle.', 1)

@@ -9,7 +9,7 @@ module.exports = {
       const result = await c.query(q1, [field])
       if (result.rows.length > 0) return result.rows[0].value_bool
     } catch (error) {
-      logError(error, 'Database Error')
+      logError(error, 'Database Error:getBool')
     }
   },
 
@@ -28,7 +28,7 @@ module.exports = {
       const result2 = await c.query(q1, [field])
       return result2.rows[0].value_bool
     } catch (error) {
-      logError(error, 'Database Error')
+      logError(error, 'Database Error:setBool')
     }
   },
 
@@ -38,7 +38,7 @@ module.exports = {
       const result = await c.query(q1, [field])
       if (result.rows.length > 0) return result.rows[0].value_int
     } catch (error) {
-      logError(error, 'Database Error')
+      logError(error, 'Database Error:getInt')
     }
   },
 
@@ -56,7 +56,36 @@ module.exports = {
       const result2 = await c.query(q1, [field])
       return result2.rows[0].value_int
     } catch (error) {
-      logError(error, 'Database Error')
+      logError(error, 'Database Error:setInt')
+    }
+  },
+
+
+  getString: async (field) => {
+    try {
+      const q1 = 'SELECT value_string FROM application_data WHERE field = $1'
+      const result = await c.query(q1, [field])
+      if (result.rows.length > 0) return result.rows[0].value_string
+    } catch (error) {
+      logError(error, 'Database Error:getString')
+    }
+  },
+
+  setString: async (field, value) => {
+    try {
+      const q1 = 'SELECT value_string FROM application_data WHERE field = $1'
+      const result1 = await c.query(q1, [field])
+      if (result1.rows.length === 0) {
+        const q2 = 'INSERT INTO application_data ("field", "value_string") VALUES ($1, $2)'
+        await c.query(q2, [field, value])
+      } else {
+        const q3 = 'UPDATE application_data SET "value_string" = $1 WHERE "field" = $2'
+        await c.query(q3, [value, field])
+      }
+      const result2 = await c.query(q1, [field])
+      return result2.rows[0].value_string
+    } catch (error) {
+      logError(error, 'Database Error:setString')
     }
   },
 
@@ -74,7 +103,7 @@ module.exports = {
       const result2 = await c.query(q1)
       return { newStatus: result2.rows[0].value_bool } 
     } catch (error) {
-      logError(error, 'Database Error')
+      logError(error, 'Database Error:markPaused')
     }
   },
 
@@ -92,7 +121,7 @@ module.exports = {
       const result2 = await c.query(q1)
       return { newStatus: result2.rows[0].value_bool }
     } catch (error) {
-      logError(error, 'Database Error')
+      logError(error, 'Database Error:markUnpaused')
     }
   },
 
@@ -103,7 +132,7 @@ module.exports = {
       const result = await c.query(q1)
       if (result.rows.length > 0) return result.rows[0].value_bool
     } catch (error) {
-      logError(error, 'Database Error')
+      logError(error, 'Database Error:pauseStatus')
     }
   },
 
@@ -113,7 +142,7 @@ module.exports = {
       const result = await c.query(q, [table])
       return result.rows[0].value_int
     } catch (error) {
-      logError(error, 'Database Error')
+      logError(error, 'Database Error:getLastTableRowInsert')
     }
   },
 
@@ -131,7 +160,7 @@ module.exports = {
       const result2 = await c.query(q1)
       return { newStatus: result2.rows[0].value_int }
     } catch (error) {
-      logError(error, 'Database Error')
+      logError(error, 'Database Error:setLastTableRowInsert')
     }
   },
 
@@ -141,7 +170,7 @@ module.exports = {
       const result = await c.query(q)
       if (result.rows.length > 0) return result.rows[0].value_int
     } catch (error) {
-      logError(error, 'Database Error')
+      logError(error, 'Database Error:getLastIndexId')
     }
   },
 
@@ -159,7 +188,7 @@ module.exports = {
       const result2 = await c.query(q1)
       return { newStatus: result2.rows[0].value_int }
     } catch (error) {
-      logError(error, 'Database Error')
+      logError(error, 'Database Error:setLastIndexId')
     }
   },
 }
