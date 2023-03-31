@@ -18,6 +18,7 @@ client = net.createConnection({ path: process.env.SUB_UNIX_SOCKET }, () => {
   client.write(JSON.stringify(config))
 })
 
+// Sometimes the data comes in over chunks so the stream is buffered and popped to combine those entries
 client.on('data', (data) => {
   try {
     buffer += data.toString()
@@ -27,10 +28,11 @@ client.on('data', (data) => {
       if (queries[i].length > 0) {
         try {
           const info = JSON.parse(queries[i])     
-          console.log('Got Something ' + typeof info)
+          console.log(info)
         } catch (error) {
-          console.log('Missed Something')
           console.log(queries[i])
+          console.log(error)
+          process.exit()
         }
       }
     }

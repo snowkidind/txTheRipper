@@ -54,7 +54,7 @@ module.exports = {
         })
         server.listen(socketFile)
         server.on('connection', function (socket) {
-          socket.write(JSON.stringify({ version: 'txTheRipper 0.0.0' }))
+          socket.write(JSON.stringify({ version: 'txTheRipper 0.0.0' }) + '\n')
         })
       } catch (error) {
         logError(error)
