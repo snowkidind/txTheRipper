@@ -1,30 +1,37 @@
 # txTheRipper - the Ethereum Transaction Indexer
 
-txTheRipper runs alongside your Erigon archive node by connecting to its rpc servers websocket to listen for new blocks. When a block is found, it then runs an import program which scans and adds some data for any new transactions. The primary feature of this is looking up transaction history by account. There are some hardware considerations as well as additional storage requirements. 
+txTheRipper runs alongside your Erigon archive node by connecting to its rpc servers websocket to listen for new blocks. When a block is found, it then runs an import program which scans and adds some data for any new transactions. In sync mode, the primary feature of this is looking up transaction history by account. In subscription mode, notifications are passed to other applications based on criteria during the parsing of new blocks. There are some hardware considerations as well as additional storage requirements. 
 
-# Subscriptions
-
-Subscribe to get notifications from incoming transactions on an service by service basis. The application provides delivery methods via unix socket and redis pub/sub. The data that is delivered contains
-- the transaction hash
-- topics (accounts) this includes all types of calls and accounts harvested from input data
-- the full trace of the transaction
-
-See the page that is [All about subscriptions](application/subscriptions/SUBSCRIPTIONS.md)
-
-# Operation Modes
+# Modes of operation 
 
 There are two modes of operation for txTheRipper: `sync` and `subscription`.
 
 - sync parses all blocks and adds the transaction information to the database. It also provides the subscription interface.
-- subscription does not save anything to the database. (besides application settings) This provides only the subscription interface
+- subscription does not save anything to the database, besides application settings. This provides only the subscription interface without the overhead of synchronizing the entire blockchain.
 
-Both modes operate in a sequential method and must be established on a fresh database, and cannot be changed without resetting the database to zero. The sync method will synchronize data for all blocks which takes days to get the full database rolling. The subscription method will synchronize to the latest block at first, and on subsequent runs, will synchronize to whatever it got to on previous runs. Once the subscription method starts, no subsequent blocks will be missed, even through application downtime or restarts.
+Both modes operate using a deterministic, sequential method. Each must be established on a fresh database, and cannot be changed without resetting the database to zero. 
+
+# sync mode
+
+The sync method will synchronize data for all blocks, which takes days to get the full database rolling. (Alternatively, there is a kickstarting method) The subscription method will synchronize to the latest block, minus the confirmations setting, on its first run, and on subsequent runs, will synchronize to the block height from the previous run. Once the subscription method starts, no subsequent blocks will be missed, even through application downtime or restarts. The services from subscription mode (below) are also available during the sync mode. All notifications from subscriptions will coorelate to the height the database sync is currently.
+
+# subscription mode
+
+Subscribe to get notifications from incoming transactions on an service by service basis. The application provides delivery methods via unix socket and redis pub/sub. The data that is delivered contains
+
+- the transaction hash
+- topics (accounts) this includes all types of calls and accounts harvested from input data
+- the full trace of the transaction
+
+In subscription mode, the database is not used to store any information. However, the latest block height and other application data is stored to deterministically find the sync point, over application restarts.
+
+See the page that is [All about subscriptions](application/subscriptions/SUBSCRIPTIONS.md)
 
 # Kickstarting the sync
 
-You can backup your own sync via pg_dump (if you have the resource) or you can copy the files in the tablespace. Additionally you can export the data to sql files which the program can read upon a fresh database installation. 
+Retrieving block data and indexing the cache for millions of blocks can be a time consuming process. Kickstarting the database, imports chain data and index cache for up to a certain block height. (data availibility may vary as a function of funding.) 
 
-Retrieving block data and indexing the cache for millions of blocks can be a time consuming process. This is a way to kickstart the database, that is to import chain data and cache for up to a certain block height. (data availibility may vary as a function of funding.) 
+You can export your own txTheRipper data to sql files which the program can read upon a fresh database installation. Alternatively, you can backup your own sync via pg_dump (if you have the resource) or you can copy the files from the tablespace.  
 
 To enable kickstarting, on a clean database, (use the nuke database function in the cli) argue:
 
@@ -34,11 +41,9 @@ node ripper.js k /path/to/kickstartdir
 
 This will begin the process of installing sql files found in the kickstart directory. Once the kickstart process is complete, it is safe to remove files in the kickstart directory or just save them as a backup.
 
-For the sake of future compatibility there is a built in export functionality for this purpose. Instead of exporting the entire database, "generations" based on block height and the highest found export file are exported. Additionally the index_cache.sql file MUST be the exact file used to export the data, that is the exported chain data works in tandem with the index cache.
+Some things to consider: During the application data export process, "generations" based on block height and the highest found export file are exported. This allows the exports to grow as the database grows without requiring entire redos. It is important to note that the index_cache.sql file MUST be the exact file used to export the data, that is the exported chain data works in tandem with the index cache, and there would be data consistency errors if the file was modified without a new complete backup.
 
-Note that if the index cache table is modified, an entire database export will be required based on the modified cache file.
-
-# The structure of the database
+# Sync mode: The structure of the database
 
 The data is imported to two postgresql tables: "transactions", and "topic"  For each transaction received, any accounts scraped from the transaction will be added as a row in the topic table. 
 
@@ -127,7 +132,7 @@ Results:
 
 To stop the script a simple Ctl-C is detected and it unwinds gracefully. It may take a little bit depending on how much information is currently being processed.
 
-# The process of indexing
+# Sync mode: The process of indexing
 
 Each iteration of this gets its own ID and all files related are isolated. Unless the entire import process of this range completes, the indexer will pick up from the same spot. This gives a level of idempotence for the application. As long as the application isnt running, it is safe to remove files from /derived/tmp
 
@@ -142,7 +147,7 @@ The application will connect to your node's websocket and listen for new blocks.
 4. Finalizing. After a successful PG query, the app data is updated with the latest block information, temporary files are cleared, and the whole process is restarted from the top.
 
 
-# Account indexed cache
+# Sync mode: Account indexed cache
 
 txTheRipper uses an index cache to record accounts that appear millions of times in the database, having a notable impact on account size. Think USDT, Uniswap Pools, Binance EOA's. These busy Ids are stored in binary (thats BYTEA in PG). 
 
