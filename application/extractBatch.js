@@ -142,7 +142,7 @@ module.exports = {
   },
 
   processBlock: async (block) => {
-    const a = await provider.getBlock(Number(block))
+    const a = provider.getBlock(Number(block))
     const b = provider.send('trace_block', [Number(block)])
     const [blockInfo, tb] = await Promise.all([a, b])
     const [transactions, newContracts, parsedTrace] = extractTopicsFromInputData(tb)
