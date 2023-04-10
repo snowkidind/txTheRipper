@@ -1,4 +1,4 @@
-const { log } = require('../utils/log')
+const { log, logError } = require('../utils/log')
 const { events, jobTimer } = require('../utils/')
 const { start, stop } = jobTimer
 const { extractBatch } = require('./extractBatch.js')
@@ -23,7 +23,15 @@ const initialSyncInit = async () => {
     return
   }
   log('Initial Sync Init. \n\nNOTICE: Adding Indexes. This could take a while, like 4 to 8 hours. Once its finished the db will be ready.\n', 1)
-  await dbInit.initIndexes(inited1, inited2, inited3, inited4, inited5)
+  
+  try {
+    await dbAppData.setBool('working', true)
+    await dbInit.initIndexes(inited1, inited2, inited3, inited4, inited5)
+    await dbAppData.setBool('working', false)
+  } catch (error) {
+    logError(error, 'ERROR: couldn\'t complete sync. Will retry after restart.')
+    await dbAppData.setBool('working', false)
+  }
 }
 
 const cleanupSync = async () => {
