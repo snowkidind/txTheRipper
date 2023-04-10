@@ -13,7 +13,7 @@ Both modes operate using a deterministic, sequential method. Each must be establ
 
 # sync mode
 
-The sync method will synchronize data for all blocks, which takes days to get the full database rolling. (Alternatively, there is a kickstarting method) Since a historical database is being created, sync must begin from the first blocks containing transactions on the chain, and continue tracing all transactions until the highest recent block.  All services from subscription mode are available when the program is set to sync mode, except that during the initial sync subscription mode will alert for information on the current block sync height, for the entirety of the blockchain history.
+The sync method will synchronize data for all blocks, which takes days to get the full database rolling. (Alternatively, there is a kickstarting method) Since a historical database is being created, sync must begin from the first blocks containing transactions on the chain, and continue tracing all transactions until the highest recent block.  All services from subscription mode are available when the program is set to sync mode, except that during the initial sync, subscription mode will alert for information on the current block sync height, for the entirety of the blockchain history.
 
 # subscription mode
 
@@ -25,17 +25,22 @@ Subscribe to get notifications from incoming transactions on an service by servi
 
 In subscription mode, the database is not used to store any information. However, the latest block height and other application data is stored to deterministically find the sync point, over application restarts.
 
-The subscription method will synchronize to the latest block, minus the confirmations setting, on its first run, and on subsequent runs, will synchronize to the block height from the previous run. Once the subscription method starts, no subsequent blocks will be missed, even through application downtime or restarts. The services from subscription mode (below) are also available during the sync mode. All notifications from subscriptions will coorelate to the height the database sync is currently.
+The subscription method will synchronize to the latest block, minus the confirmations setting, on its first run, and on subsequent runs, will synchronize to the block height from the previous run. Once the subscription method starts, no subsequent blocks will be missed, even through application downtime or restarts. The services from subscription mode (below) are also available during the sync mode. All notifications from subscriptions will coorelate to the height of the current database sync.
 
 See the page that is [All about subscriptions](application/subscriptions/SUBSCRIPTIONS.md)
 
 # Kickstarting the sync
 
-Retrieving block data and indexing the cache for millions of blocks can be a time consuming process. To save time, you can Kickstart the database: Import chain data and index cache for the historical data. (data availibility may vary as a function of funding.) 
+Retrieving block data and indexing the cache for millions of blocks can be a time consuming process. To save time, you can Kickstart the database by importing the chain data and index_cache for the historical data. (data availibility may vary as a function of funding.) 
 
-You can import downloaded database files, and also may export your own txTheRipper data to sql files which the program can read upon a fresh database installation. Alternatively, you can backup your own sync via pg_dump (if you have the resource) or you can copy the files from the tablespace.  
+Alternate methods for quickstarting txTheRipper:
+
+- export your own txTheRipper data to sql files and import them
+- recover via pg_dump (if you have the resource)
 
 To enable kickstarting, on a clean database, (use the nuke database function in the cli) argue:
+
+> The kickstart download isnt currently available but the author is willing to make arrangements to pass this on to people interested in the project.
 
 ```
 node ripper.js k /path/to/kickstartdir
@@ -43,7 +48,9 @@ node ripper.js k /path/to/kickstartdir
 
 This will begin the process of installing sql files found in the kickstart directory. Once the kickstart process is complete, it is safe to remove files in the kickstart directory or just save them as a backup.
 
-Some things to consider: During the application data export process, "generations" based on block height and the highest found export file are exported. This allows the exports to grow as the database grows without requiring entire redos. It is important to note that the index_cache.sql file MUST be the exact file used to export the data, that is the exported chain data works in tandem with the index cache, and there would be data consistency errors if the file was modified without a new complete backup.
+Some things to consider: During the application data export process, "generations" based on block height and the highest found export file are exported. This allows the exports to grow as the database grows without requiring entire redos. 
+
+> It is important to note that the index_cache.sql file MUST be the exact file used to export the data, that is the exported chain data works in tandem with the index cache, and there would be data consistency errors if the file was modified without a new complete backup.
 
 # Sync mode: The structure of the database
 
