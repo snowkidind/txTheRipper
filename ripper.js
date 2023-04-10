@@ -38,22 +38,28 @@ const initialInit = async () => {
 
 const echoSettings = () => {
   let settings = '\n\nApplication Settings:\n'
+  settings += '    exec_node:'.padEnd(30) + process.env.EXEC_NODE + '\n'
   settings += '    basepath:'.padEnd(30) + process.env.BASEPATH + '\n'
   settings += '    rpc:'.padEnd(30) + process.env.RPC_NODE + '\n'
   settings += '    rpcws:'.padEnd(30) + process.env.RPC_NODE_WS + '\n'
-  settings += '    reconnect_timeout:'.padEnd(30) + process.env.WS_RECONNECT_TIMEOUT + '\n'
-  settings += '    database_name:'.padEnd(30) + process.env.DB_NAME + '\n'
   settings += '    log_level:'.padEnd(30) + process.env.LOG_LEVEL + '\n'
   settings += '    log_to_file:'.padEnd(30) + process.env.LOG_TO_FILE + '\n'
-  settings += '    log_to_file:'.padEnd(30) + process.env.LOG_FILE_LOCATION + '\n'
+  settings += '    log_file_location:'.padEnd(30) + process.env.LOG_FILE_LOCATION + '\n'
+  settings += '    database_name:'.padEnd(30) + process.env.DB_NAME + '\n'
+  settings += '    redis_url:'.padEnd(30) + process.env.REDIS_URL + '\n'
   settings += '    confirmations:'.padEnd(30) + process.env.CONFIRMATIONS + '\n'
+  settings += '    operation_mode:'.padEnd(30) + process.env.OPERATION_MODE + '\n'
   settings += '    optimize_disk_writes:'.padEnd(30) + process.env.OPTIMIZE_DISK_WRITES + '\n'
   settings += '    commit_every_n_blocks:'.padEnd(30) + process.env.COMMIT_EVERYN_BLOCKS + '\n'
   settings += '    json_file_max:'.padEnd(30) + process.env.JSON_TX_FILE_MAX + '\n'
+  settings += '    reconnect_timeout:'.padEnd(30) + process.env.WS_RECONNECT_TIMEOUT + '\n'
   settings += '    use_multi_threads:'.padEnd(30) + process.env.USE_MULTI_THREADS + '\n'
   settings += '    number_of_threads:'.padEnd(30) + process.env.MULTI_THREADS + '\n'
+  settings += '    number_of_threads:'.padEnd(30) + process.env.MULTI_THREADS + '\n'
+  settings += '    use_redis_data:'.padEnd(30) + process.env.USE_REDIS_DATA + '\n'
   settings += '    index_cache_disable:'.padEnd(30) + process.env.INDEX_CACHE_DISABLE + '\n'
   settings += '    dont_index:'.padEnd(30) + process.env.DONT_INDEX + '\n'
+  settings += '    dev_stop_flags:'.padEnd(30) + process.env.DEV_STOP_FLAGS_ENABLE + '\n'
   settings += '    sub_suspend_all:'.padEnd(30) + process.env.SUB_SUSPEND_ALL + '\n'
   settings += '    sub_use_unix_socket:'.padEnd(30) + process.env.SUB_USE_UNIX_SOCKET + '\n'
   settings += '    sub_unix_socket:'.padEnd(30) + process.env.SUB_UNIX_SOCKET + '\n'
@@ -82,7 +88,7 @@ const init = async () => {
       const procInfo = await fs.readFileSync(procDir + '/' + proc + '/status', 'utf8')
       const guts = procInfo.split('\n')
       if (guts[0].includes('node')) {
-        await logStats(source)
+        await logStats('process checker')
         log('Error: Only one process may run at a time! Pid: ' + proc + ' is still running. Exiting...', 1)
         process.exit(1)
       }
