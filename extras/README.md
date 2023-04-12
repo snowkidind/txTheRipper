@@ -1,3 +1,22 @@
+# External DB calls
+
+In the directory `externalDb` there is a standard hookup for postgres. Be sure to add your db config vars to the environment:
+
+```
+DB_USER=postgres
+DB_HOST=localhost
+DB_NAME=ripper_dev
+DB_PASS=password
+```
+
+# Audit a block
+
+```
+node extras/audit.js 3452553
+```
+
+The auditor picks the head block if no specific block is argued at the command line. This test picks up the database information and then compares it with fresh data pulled from your node. Results out to console.log
+
 # Indexing Popular contracts
 
 the process of identifying popular contracts is at hand. 
