@@ -74,7 +74,7 @@ module.exports = {
     if (typeof message !== 'object') throw "Cannot stringify something that is not an object!"
     if (connections[id]) connections[id].write(JSON.stringify(message) + '\n')
     if (disconnect) {
-      connections[id].destroy()
+      if (connections[id]) connections[id].destroy()
     }
   }
 }
