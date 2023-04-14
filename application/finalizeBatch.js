@@ -2,7 +2,7 @@ const fs = require('fs')
 
 const { dbAppData } = require('../db')
 const { log, logError } = require('../utils/log')
-const { memStats } = require('../utils/system')
+const { memStatsOneLine } = require('../utils/system')
 const events = require('../utils/events.js')
 
 const baseDir = process.env.BASEPATH + 'derived/tmp/'
@@ -18,7 +18,7 @@ module.exports = {
       if (fs.existsSync(batchJsonFile)) fs.rmSync(batchJsonFile)
       if (fs.existsSync(batchSqlFile)) fs.rmSync(batchSqlFile)
       log('Round completed to block ' + lastScanned + ', preparing to get next block range...',1)
-      memStats(true)
+      memStatsOneLine()
     }
     await sleep(200)
   }
