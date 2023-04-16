@@ -35,7 +35,7 @@ module.exports = {
       const cc = await dbRedis.get(key)
       if (!cc) {
         addressCache = await dbContractCache.getCache(cacheLimit)
-        await dbRedis.set(key, JSON.stringify(addressCache), 12 * 60 * 60) // 12 hours
+        await dbRedis.set(key, JSON.stringify(addressCache))
       } else {
         addressCache = JSON.parse(cc)
       }

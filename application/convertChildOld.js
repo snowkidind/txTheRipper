@@ -38,7 +38,7 @@ let jobId = _jobId[_jobId.length - 1].replace('.json', '')
           console.log('WARNING: Attempting to re-insert dbContractCache to redis, child ' + jobId)
           addressCache = await dbContractCache.getCache(cacheLimit)
           // Redis may be ded if we got here. 
-          await redis.set(key, JSON.stringify(addressCache), 12 * 60 * 60) // 12 hours
+          await redis.set(key, JSON.stringify(addressCache))
           console.log('Reboot successful ' + jobId)
         }
       } else {

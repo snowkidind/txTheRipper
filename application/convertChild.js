@@ -29,6 +29,8 @@ const { log, logError } = require('../utils/log')
 */
 const useRedisData = process.env.USE_REDIS_DATA === 'true' ? true : false
 
+const contractCacheMax = 10000
+
 let filePath
 try {
   if (typeof process.argv[2] !== 'undefined') {
@@ -69,11 +71,16 @@ if (useRedisData) {
         await sleep(2000)
         cc = await redis.get(key)
         if (!cc) {
+          await sleep(2000)
           console.log('WARNING: Attempting to re-insert dbContractCache to redis, child ' + jobId)
+          let cacheLimit = await dbContractCache.cacheSize()
+          if (cacheLimit > contractCacheMax) {
+            cacheLimit = contractCacheMax
+          }
+
           addressCache = await dbContractCache.getCache(cacheLimit)
           // Redis may be ded if we got here. 
-          await redis.set(key, JSON.stringify(addressCache), 12 * 60 * 60) // 12 hours
-          console.log('Reboot successful ' + jobId)
+          await redis.set(key, JSON.stringify(addressCache))
         }
       } else {
         addressCache = JSON.parse(cc)
