@@ -25,7 +25,7 @@ CREATE TYPE account_info_t AS (
 );
 
 CREATE OR REPLACE FUNCTION account_info(
-  "Account"   varchar, 
+  "Account"   bytea, 
   "FromBlock" integer,
   "Limit"     integer,
   "Offset"    integer)
@@ -34,12 +34,18 @@ LANGUAGE plpgsql AS $$
 DECLARE
   _result account_info_t%rowtype;
   _block integer;
+  _translate bytea;
 BEGIN
+  BEGIN
+    SELECT "byteId" INTO STRICT _translate FROM contract_cache WHERE account = "Account" LIMIT 1;
+    EXCEPTION WHEN NO_DATA_FOUND THEN
+      _translate = "Account";
+  END;
   IF "FromBlock" IS NULL THEN _block = 0;
   ELSE _block = "FromBlock"; END IF;
-  RETURN QUERY SELECT tr.id, tr.block, tr.timestamp, encode(tr.hash, 'escape') AS hash, encode(t.account, 'escape') AS account 
+  RETURN QUERY SELECT tr.id, tr.block, tr.timestamp, encode(tr.hash, 'escape') AS hash, encode(translate(t.account)::bytea, 'escape') AS account 
   FROM transactions tr 
-  INNER JOIN topic t ON tr.id = t.parent AND t.account = LOWER("Account")::BYTEA AND tr.block >= _block
+  INNER JOIN topic t ON tr.id = t.parent AND t.account = _translate AND tr.block >= _block
   ORDER BY tr.block DESC LIMIT "Limit" OFFSET "Offset";
 END;
 $$;
