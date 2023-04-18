@@ -95,7 +95,7 @@ module.exports = {
     if (query === 'e') {
       const message = 'This will export the entire database into sql files as well as the index cache file.\n this operation may take a while to complete.\nExport data?'
       const answer = await getAnswer(rl, message, mainMenu)
-      if (answer !== y) {
+      if (answer !== 'y') {
         mainMenu()
         return
       }
