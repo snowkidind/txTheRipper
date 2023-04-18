@@ -21,6 +21,7 @@ const extractData = async () => {
       heightOriginal = 0
     }
     heightWork = heightOriginal
+    console.log('Batch: ' + heightWork)
     let txns = 'BEGIN;\n'
     txns += 'INSERT INTO transactions ("id", "block", "timestamp", "hash") VALUES\n'
     let topics = 'BEGIN;\n'
