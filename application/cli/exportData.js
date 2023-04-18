@@ -5,7 +5,7 @@ const { log, logError } = require('../../utils/log')
 
 let rl
 
-const kickstartDir = process.env.BASEPATH + 'derived/kickstart/'
+const kickstartDir = process.env.KICKSTARTDIR
 const fileSizeMax = Number(process.env.JSON_TX_FILE_MAX) || 300000000
 const importHeight = kickstartDir + 'importHeight'
 const chunkSize = 2000 // number of blocks to pull from sql in a single query
