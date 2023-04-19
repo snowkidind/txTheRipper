@@ -2,13 +2,15 @@ const fs = require('fs')
 const { getAnswer } = require('./common.js')
 const { dbProfiles, dbSubscriptions, dbContractCache, dbAppData, dbTransactions, dbCommon } = require('../../db')
 const { log, logError } = require('../../utils/log')
-
 let rl
 
 const kickstartDir = process.env.KICKSTARTDIR
 const fileSizeMax = Number(process.env.JSON_TX_FILE_MAX) || 300000000
 const importHeight = kickstartDir + 'importHeight'
-const chunkSize = 2000 // number of blocks to pull from sql in a single query
+
+// number of blocks to pull from sql in a single query
+//   if this is too large, Node will not be able to compose the string to write the sql query.
+const chunkSize = 1000 
 let heightWork
 
 const extractData = async () => {
@@ -44,13 +46,12 @@ const extractData = async () => {
       const full = isFull(topics, txns)
       heightWork += chunkSize
       if (full) {
-        txns = txns.slice(0, txns.length - 2)
-        txns += ';\n'
-        txns += 'COMMIT;\n'
-        topics = topics.slice(0, topics.length - 2)
-        topics += ';\n'
-        topics += 'COMMIT;\n'
-        const write = txns + '\n' + topics
+        write = txns.slice(0, txns.length - 2)
+        write += ';\n'
+        write += 'COMMIT;\n\n'
+        write += topics.slice(0, topics.length - 2)
+        write += ';\n'
+        write += 'COMMIT;\n'
         const filePath = kickstartDir + top + '_blocks.sql'
         fs.writeFileSync(filePath, write)
         log(top + '_blocks.sql written to: ' + filePath, 1)
@@ -85,7 +86,6 @@ module.exports = {
     }
 
     const mainMenu = module.exports.mainMenu
-    
     let menu = "\n  ####### Export Data Menu: #######\n\n"
     menu += "  e    Export indexer data\n"
     menu += "  q    Exit\n\n"
