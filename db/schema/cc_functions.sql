@@ -41,6 +41,7 @@ BEGIN
     EXCEPTION WHEN NO_DATA_FOUND THEN
       _translate = "Account";
   END;
+  RAISE NOTICE 'translate: %', _translate;
   IF "FromBlock" IS NULL THEN _block = 0;
   ELSE _block = "FromBlock"; END IF;
   RETURN QUERY SELECT tr.id, tr.block, tr.timestamp, encode(tr.hash, 'escape') AS hash, encode(translate(t.account)::bytea, 'escape') AS account 
