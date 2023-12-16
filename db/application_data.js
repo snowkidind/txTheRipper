@@ -15,7 +15,6 @@ module.exports = {
 
   setBool: async (field, value) => {
     try {
-      
       const q1 = 'SELECT value_bool FROM application_data WHERE field = $1'
       const result1 = await c.query(q1, [field])
       if (result1.rows.length === 0) {
@@ -36,7 +35,7 @@ module.exports = {
     try {
       const q1 = 'SELECT value_int FROM application_data WHERE field = $1'
       const result = await c.query(q1, [field])
-      if (result.rows.length > 0) return result.rows[0].value_int
+      if (result.rows.length > 0) return Number(result.rows[0].value_int)
     } catch (error) {
       logError(error, 'Database Error:getInt')
     }
