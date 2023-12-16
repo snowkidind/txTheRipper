@@ -57,7 +57,11 @@ module.exports = {
 
     start('synchronize')
     log('NOTICE: Beginning synchronization process.', 1)
-    const lastSyncPoint = await dbAppData.getInt('block_sync') // was set to 99981
+    const lastSyncPointString = await dbAppData.getInt('block_sync') // was set to 99981
+
+    // lastSyncPoint is a string now that its a bigint
+    const lastSyncPoint = Number(lastSyncPointString)
+    
     const ls = lastSyncPoint // The block we are looking for is one greater than the last block synced
     const bh = blockHeight - confirmations
     if (0 >= bh - ls) {
