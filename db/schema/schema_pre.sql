@@ -20,7 +20,7 @@ CREATE TABLE application_data (
   "id"             serial not null unique primary key,
   "field"          varchar,
   "value_bool"     boolean,
-  "value_int"      integer,
+  "value_int"      bigint,
   "value_string"   varchar
 );
 

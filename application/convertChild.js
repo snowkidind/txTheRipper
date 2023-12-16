@@ -100,12 +100,22 @@ if (useRedisData) {
       }
       delete _json
       let matches = 0
+
+      // iterate all cache
       for (let i = 0; i < addressCache.length; i++) {
+
+        // iterate all json tx
         for (let j = 0; j < json.length; j++) {
+
+          // iterate topics per tx
           for (let k = 0; k < json[j].topics.length; k++) {
+
+            // if cached acct === topic
             if (addressCache[i].account === json[j].topics[k]) {
               matches += 1
               // console.log('Match: ' + addressCache[i].account + ' ' + json[j].topics[k] + ' -> ' + addressCache[i].byteId)
+              
+              // assign byteId of cached acct to topic
               json[j].topics[k] = addressCache[i].byteId
             }
           }

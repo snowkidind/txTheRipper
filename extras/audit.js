@@ -34,7 +34,7 @@ const noIndexMax = 4000000
         console.log('Couldn\'t interpret request, using last block synced: ' + highBlock)
       }
     }
-
+    console.log('Using: ' + highBlock)
     start('Audit')
     let noIndexes = false
     const indexesTx = await dbCommon.showIndexes('transactions')
