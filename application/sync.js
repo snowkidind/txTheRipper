@@ -110,6 +110,7 @@ module.exports = {
       Once the JSON files have been processed, then the script generates a sql file for postgres
       to run (on a separate thread) This utilizes multi cores.
     */
+
     const success = await importTransactionsToPg(jobId, converted)
     if (success === false) {
       await cleanupSync()

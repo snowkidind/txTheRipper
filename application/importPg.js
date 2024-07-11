@@ -34,6 +34,7 @@ const addDb = (fileToRead) => {
 
 module.exports = {
   importTransactionsToPg: async (jobId, _data) => {
+    // only for archive db
     if (process.env.OPERATION_MODE === 'subscription') {
       return
     }
@@ -52,7 +53,8 @@ module.exports = {
       log("NOTICE: initializing transactionId_seq to 0", 2)
       transactionId = await dbAppData.setInt('transactionId', 0)
     }
-    let id = transactionId + 1
+    // Since the transactionId can be larger than an integer size, the db returns a string.
+    let id = Number(transactionId) + 1
 
     // First, generate a sql file out of the JSON
     log('NOTICE: Importing Batch to database', 2)
@@ -74,6 +76,7 @@ module.exports = {
       const data = json[k]
       f1 += '(' + id + ',' + data.block + ',' + data.timestamp + ',\'' + data.hash + '\'),\n'
       for (let l = 0; l < data.topics.length; l++) {
+        // RangeError: Invalid string length = id was a string
         f2 += '(' + id + ',\'' + data.topics[l] + '\'),\n'
       }
       id += 1

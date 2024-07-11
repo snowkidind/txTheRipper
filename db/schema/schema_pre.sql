@@ -43,7 +43,7 @@ CREATE TABLE transactions (
 -- table to store accounts realted to a transaction hash
 CREATE TABLE topic (
   "id"         bigserial not null, 
-  "parent"     integer not null,   -- this is not a hash but an integer id
+  "parent"     bigint not null,   -- this is not a hash but an integer id
   "account"    bytea not null      -- an account which was affected by this transaction
 ) PARTITION BY RANGE ("id");
 

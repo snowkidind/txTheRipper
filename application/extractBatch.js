@@ -45,10 +45,20 @@ const commit = async (syncFile, block) => {
 const commitMem = async (block) => {
   await dbAppData.setInt('last_block_scanned', block)
   if (txQueue.length === 0) return
-  const _json = JSON.stringify(txQueue)
-  if (_json.length > fileSizeMax) {
-    return { batchFinished: true, size: _json.length }
+  try { 
+    
+    const _json = JSON.stringify(txQueue)
+    if (_json.length > fileSizeMax) {
+      return { batchFinished: true, size: _json.length }
+    }
+  } catch (error) { 
+    // this is fatal, for now
+    console.log(error)
+    console.log('DEBUG issue 5, reduce env - JSON_TX_FILE_MAX to 50000000')
+    console.log(txQueue.length)
+    process.exit()
   }
+
 }
 
 const stringify = (obj) => {
