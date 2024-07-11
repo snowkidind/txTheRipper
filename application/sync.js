@@ -87,9 +87,13 @@ module.exports = {
     const [jobId, data] = await extractBatch(blockHeight, lastSyncPoint)
     if (typeof jobId === 'undefined') {
       // the app crashed or had some issue
+      console.log('DEBUG: jobId:', jobId)
+      console.log('DEBUG: data:', data.length)
+      log('ERROR: extractBatch: the app crashed or had some issue.', 1)
       await cleanupSync()
       return 'error'
     }
+
 
     /* 
       In order to save a lot of disk space and read writes, popular accounts are collected 

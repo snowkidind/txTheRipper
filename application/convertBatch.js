@@ -83,7 +83,7 @@ module.exports = {
           promises.push(system.execCmd(process.env.EXEC_NODE + ' ' + cmd, true))
         }
         await Promise.all(promises)
-        // log('all child processes completed: ' + jobId, 1)
+        log('convertBatch: all child processes completed: ' + jobId, 1)
         let jsonOut = []
         for (let i = 0; i < files.length; i++) {
           let _file

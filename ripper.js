@@ -235,9 +235,22 @@ const setUpWsProviderAndGo = async () => {
   const id = getId()
   wsProvider['ripperId'] = id
   log('NOTICE: Opening New WS Provider with id: ' + id)
+
+  let deBounce = false
   wsProvider.on("block", async (block) => {
-    await doSynchronize(block)
+    if (deBounce === false) { 
+      deBounce = true
+      await doSynchronize(block)
+    } else {
+      console.log('DEBUG: Received several blocks simultaneously.')
+    }
+    // this is for HW issue, it doesnt care 
+    // whether or not doSynchronize is finished.
+    setTimeout(() => {
+      deBounce = false;
+    }, 1000)
   })
+
   const timeoutDuration = Number(process.env.WS_RECONNECT_TIMEOUT) * 1000 || 5000
   wsProvider._websocket.on("error", async (error) => {
     logError(error)
