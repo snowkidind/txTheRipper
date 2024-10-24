@@ -12,7 +12,7 @@ log/*
 notes/
 testbinfile
 archive/
-
+test/
 derived/
 !derived/abi/abi.txt
 !derived/application/application.txt

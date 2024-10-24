@@ -152,9 +152,27 @@ module.exports = {
   },
 
   processBlock: async (block) => {
-    const a = provider.getBlock(Number(block))
-    const b = provider.send('trace_block', [Number(block)])
-    const [blockInfo, tb] = await Promise.all([a, b])
+
+    const blockInfo = await provider.getBlock(Number(block))
+    let tb
+    try {
+      tb = await provider.send('trace_block', [Number(block)]) // error: insufficient funds for gas * price + va
+    } catch (error) {
+      log('WARNING: Couldnt bulk trace block, tracing individual transactions...')
+      const _transactions = []
+      for (let i = 0; i < blockInfo.transactions.length; i++) {
+        try {
+          const txTrace = await provider.send('trace_transaction', [blockInfo.transactions[i]])
+          txTrace.forEach((action) => {
+            _transactions.push(action)
+          })
+        } catch (error) {
+          log('Found Untraceable transaction: ' + blockInfo.transactions[i])
+        }
+      }
+      tb = _transactions
+    }
+
     const [transactions, newContracts, parsedTrace] = extractTopicsFromInputData(tb)
     await router.data([transactions, newContracts, parsedTrace]) // call our external services here
     if (block % 200 === 0) {
