@@ -1,3 +1,6 @@
+const perf = require('execution-time')()
+const { v4 } = require('uuid')
+
 const { Pool, types } = require('pg')
 types.setTypeParser(1114, function (stringValue) {
   return stringValue
@@ -17,18 +20,21 @@ module.exports = {
         client: client,
         begin: (async () => {
           await client.query('BEGIN')
+          log('in')
         }),
         commit: (async () => {
           await client.query('COMMIT')
+          log('out')
           client.release()
         }),
         rollback: (async () => {
+          log('Error or something... Rolling back query')
           await client.query('ROLLBACK')
           client.release()
         }),
         showRaiseNotice: (thisClient) => {
           thisClient.on('notice', (notice) => {
-            console.log(notice.message)
+            log(notice.message)
           })
         }
       }
@@ -56,9 +62,21 @@ module.exports = {
           initPool()
         }
         pool.query(query, queryValues, (err, res) => {
+
+          // const job = v4()
+          // console.log('Job: ' + job)
+          // const title = 'pool query'
+          // perf.start(job, ' ' + title)
+          // log(job + ' ' + query.substr(0, 100))
+          
           if (err) {
             reject(err)
           } else {
+          
+            // const allDuration = perf.stop(job)
+            // const message = job + ' ' + title + ' completed in ' + allDuration.preciseWords
+            // log(message)
+          
             resolve(res)
           }
         })
@@ -98,6 +116,7 @@ function initPool() {
     host: process.env.DB_HOST,
     database: process.env.DB_NAME,
     password: process.env.DB_PASS,
+    idleTimeoutMillis: 500,
   });
   pool = _pool
   _pool.on('error', (error, client) => {

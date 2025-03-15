@@ -12,7 +12,9 @@ const logToFile = typeof _logToFile == 'undefined' ? false : _logToFile.trim()
 const logFilePath = process.env.LOG_FILE_LOCATION || process.env.BASEPATH + 'derived/application/log.txt'
 
 module.exports = {
-  log: (message, level, object) => {
+  log: (message, _level, object) => {
+    let level = _level
+    if (!_level) level = 1
     const log = (message) => { 
       const msg = timeFmtDb(dateNowBKK()) + ' ' + message
       console.log(msg)

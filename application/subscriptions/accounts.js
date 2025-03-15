@@ -7,7 +7,9 @@ let acctSubs
 
 const pollAccountSubs = async () => {
   acctSubs = await dbSubscriptions.getAllEnabled('accounts')
-  setTimeout(pollAccountSubs, 10000)
+  // idea 1. if the timeout is called before the db returns, then you get a hanging select statement...
+  // could happen if another statement is blocking postgresql / table locked etc
+  setTimeout(pollAccountSubs, 1000 * 60 * 60) // update once per hour
 }
 
 const hasSubscriptions = async (account) => {
